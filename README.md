@@ -1,12 +1,36 @@
-# React + Vite
+# Panza Verde - React
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+La web fue diseñada inicialmente para un emprendimiento de Librería que venimos adminsitrando con mi pareja desde hace ya algunos años. De a poco, vamos agregando servicios que permitan dar facilidades a nuestros clientes y así poder generar más ingresos.
 
-Currently, two official plugins are available:
+## 🚀 Características
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Desarrollado con React 19
+- Estilizado con Bootstrap 5 y SASS
+- Animaciones con AOS y Animate.css
+- Enrutamiento con React Router DOM
 
-## Expanding the ESLint configuration
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Tecnologías Utilizadas
+
+- React 19
+- Vite
+- Bootstrap 5
+- SASS
+- React Router DOM
+- AOS (Animate On Scroll)
+- Animate.css
+- Bootstrap Icons
+
+## 🏗️ Estructura del Proyecto
+
+```
+src/
+├── assets/         # Recursos estáticos
+├── components/     # Componentes reutilizables
+├── context/        # Contextos de React
+├── data/           # Datos y configuraciones
+├── hooks/          # Hooks personalizados
+├── pages/          # Páginas principales
+├── services/       # Servicios y APIs
+└── utils/          # Utilidades y helpers
+```
