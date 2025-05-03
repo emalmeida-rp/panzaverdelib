@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "titulo": "Trabajo de Ejemplo 1",
+    "descripcion": "Descripción breve del trabajo realizado con nuestros materiales.",
+    "imagen": "../public/placeholder.webp"
+  },
+  {
+    "id": 2,
+    "titulo": "Trabajo de Ejemplo 2",
+    "descripcion": "Otro ejemplo de proyecto realizado por nuestros clientes.",
+    "imagen": "../public/placeholder.webp"
+  },
+  {
+    "id": 3,
+    "titulo": "Trabajo de Ejemplo 3",
+    "descripcion": "Otro ejemplo de proyecto realizado por nuestros clientes.",
+    "imagen": "../public/placeholder.webp"
+  }
+] 

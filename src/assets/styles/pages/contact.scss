@@ -1,0 +1,87 @@
+.contact {
+  padding: 2rem 0;
+
+  header {
+    margin-bottom: 2rem;
+    
+    h1 {
+      color: var(--primary-color);
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+  }
+
+  .letrero {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: 8px;
+    text-align: center;
+
+    .texto-letrero {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin: 0;
+    }
+  }
+
+  .accordion {
+    .accordion-button {
+      background-color: var(--primary-color);
+      color: white;
+
+      &:not(.collapsed) {
+        background-color: var(--secondary-color);
+      }
+    }
+
+    .list-group-item {
+      details {
+        summary {
+          cursor: pointer;
+          padding: 0.5rem 0;
+          font-weight: 500;
+
+          &:hover {
+            color: var(--primary-color);
+          }
+        }
+
+        p {
+          padding: 1rem;
+          margin-top: 0.5rem;
+          background-color: #f8f9fa;
+          border-radius: 4px;
+          font-size: 0.95rem;
+        }
+      }
+    }
+  }
+
+  form {
+    .form-control, .form-select {
+      &:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+      }
+    }
+
+    .form-check-input {
+      &:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+
+      &:hover {
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+      }
+    }
+  }
+} 

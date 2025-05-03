@@ -1,0 +1,151 @@
+// Variables
+$primary-color: #28a745;
+$secondary-color: #218838;
+$text-color: #333;
+$background-color: #fff;
+
+// Mixins
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin transition($property: all) {
+  transition: $property 0.3s ease;
+}
+
+// Global styles
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  line-height: 1.6;
+  color: $text-color;
+  background-color: $background-color;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  padding: 2rem 0;
+}
+
+// Importar estilos de páginas
+@import './pages/history';
+@import './pages/contact';
+@import './pages/cart';
+
+// Estilos del Navbar
+.navbar {
+  background-color: $primary-color;
+  padding: 1rem;
+
+  .navbar-logo {
+    color: white;
+    text-decoration: none;
+    font-size: 1.5rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: color 0.2s;
+    &:hover {
+      color: $secondary-color;
+    }
+  }
+
+  .navbar-links {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .nav-link {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-weight: 500;
+    position: relative;
+    transition: color 0.2s, background 0.2s;
+    display: flex;
+    align-items: center;
+    
+    // Subrayado animado
+    &::after {
+      content: '';
+      display: block;
+      width: 0;
+      height: 2px;
+      background: #fff;
+      transition: width 0.3s;
+      position: absolute;
+      left: 0;
+      bottom: 0.2rem;
+    }
+    &:hover, &.active {
+      color: #fff;
+      background: rgba(255,255,255,0.12);
+      &::after {
+        width: 100%;
+      }
+      i {
+        color: #fff;
+      }
+    }
+    i {
+      margin-right: 0.4em;
+      font-size: 1.2em;
+      color: white;
+      transition: color 0.2s;
+    }
+  }
+}
+
+// Estilos del Footer
+.footer {
+  background-color: $primary-color;
+  color: white;
+  padding: 2rem 0;
+  margin-top: 3rem;
+
+  .logo-original {
+    max-height: 100px;
+    margin-bottom: 1rem;
+  }
+
+  .social-links {
+    a {
+      @include transition(transform);
+
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+  }
+
+  p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+}
+
+// Estilos básicos de las páginas
+.home, .cart, .history, .contact, .gallery {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  
+  h1 {
+    margin-bottom: 2rem;
+    color: $primary-color;
+  }
+} 
