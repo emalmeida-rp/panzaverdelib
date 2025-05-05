@@ -17,7 +17,7 @@ const Navbar = () => {
     <nav className="navbar navbar-expand-lg navbar-light bg-success">
       <div className="container">
         <Link to="/" className="navbar-logo" style={{ color: 'white', textDecoration: 'none', fontSize: '1.5rem' }}>
-          Panza Verde
+          Libreria Panza Verde
         </Link>
         <button
           className="navbar-toggler"
