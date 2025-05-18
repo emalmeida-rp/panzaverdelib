@@ -17,7 +17,7 @@ const ItemListContainer = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetchWithAuth('/products');
+        const response = await fetchWithAuth('https://panzaverdelib-be-production.up.railway.app/api/products');
         if (!response.ok) {
           throw new Error('Error al cargar los productos');
         }
