@@ -4,6 +4,8 @@ import 'aos/dist/aos.css';
 import { useCart } from '../context/CartContext';
 import { fetchWithAuth } from '../utils/api';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const ItemListContainer = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +19,7 @@ const ItemListContainer = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetchWithAuth('https://panzaverdelib-be-production.up.railway.app/api/products');
+        const response = await fetchWithAuth(`${API_URL}/api/products`);
         if (!response.ok) {
           throw new Error('Error al cargar los productos');
         }
