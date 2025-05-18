@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:6003/api';
+const API_URL = 'panzaverdelib-be-production.up.railway.app';
 
 export const fetchWithAuth = async (endpoint, options = {}) => {
   const token = localStorage.getItem('adminToken');

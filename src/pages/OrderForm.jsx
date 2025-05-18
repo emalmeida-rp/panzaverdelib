@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAlert } from '../context/AlertContext';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const OrderForm = () => {
   const { cart, getTotal, clearCart } = useCart();
   const { showAlert } = useAlert();
@@ -35,7 +37,7 @@ const OrderForm = () => {
         total: getTotal()
       };
       console.log('Datos enviados al backend:', orderData);
-      const response = await fetch('http://localhost:6003/api/orders', {
+      const response = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -3,11 +3,12 @@ import React, { useState, useEffect } from "react";
 const Galeria = () => {
   const [trabajos, setTrabajos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     const fetchGallery = async () => {
       try {
-        const res = await fetch('http://localhost:6003/api/gallery');
+        const res = await fetch(`${API_URL}/api/gallery`);
         const data = await res.json();
         setTrabajos(data);
       } catch (err) {

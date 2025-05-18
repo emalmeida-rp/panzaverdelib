@@ -14,6 +14,7 @@ const CartWidget = () => {
   const [showModal, setShowModal] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // Detectar si es móvil
   const isMobile = window.innerWidth < 992;
@@ -72,7 +73,7 @@ const CartWidget = () => {
         total: getTotal()
       };
       try {
-        const response = await fetch('http://localhost:6003/api/orders', {
+        const response = await fetch(`${API_URL}/api/orders`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(orderData)

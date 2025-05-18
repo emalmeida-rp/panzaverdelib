@@ -5,6 +5,7 @@ import axios from 'axios';
 
 const CLOUDINARY_UPLOAD_PRESET = 'upload_lpv'; // Reemplaza por tu upload_preset
 const CLOUDINARY_CLOUD_NAME = 'libpanzaverdearcloudinary'; // Reemplaza por tu cloud_name
+const API_URL = import.meta.env.VITE_API_URL;
 
 const GalleryAdmin = () => {
   const [images, setImages] = useState([]);
@@ -21,7 +22,7 @@ const GalleryAdmin = () => {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const res = await fetch('http://localhost:6003/api/gallery');
+        const res = await fetch(`${API_URL}/api/gallery`);
         const data = await res.json();
         setImages(data);
       } catch (err) {
