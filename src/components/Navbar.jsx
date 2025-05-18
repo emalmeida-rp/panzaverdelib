@@ -12,7 +12,7 @@ const Navbar = () => {
 
   return (
     <nav className="navbar navbar-expand-lg navbar-light bg-success w-100">
-      <div className="container-fluid px-4">
+      <div className="container-fluid px-4 justify-content-between">
         <Link to="/" className="navbar-logo" style={{ color: 'white', textDecoration: 'none', fontSize: '1.5rem' }}>
           Libreria Panza Verde
         </Link>
@@ -26,7 +26,7 @@ const Navbar = () => {
           <span className="navbar-toggler-icon"></span>
         </button>
         <div className={`${isNavCollapsed ? 'collapse' : ''} navbar-collapse`}>
-          <div className="navbar-nav me-auto">
+          <div className="navbar-nav ms-auto">
             <Link to="/" className="nav-link" onClick={() => setIsNavCollapsed(true)}>Inicio</Link>
             <Link to="/productos" className="nav-link" onClick={() => setIsNavCollapsed(true)}>Productos</Link>
             <Link to="/history" className="nav-link" onClick={() => setIsNavCollapsed(true)}>Historia</Link>
