@@ -1,0 +1,291 @@
+import React, { useState, useEffect } from 'react';
+import { fetchWithAuth } from '../../utils/api';
+import { useAlert } from '../../context/AlertContext';
+import Swal from 'sweetalert2';
+
+const OrdersAdmin = () => {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const { showAlert } = useAlert();
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const response = await fetchWithAuth('/orders');
+      if (!response.ok) {
+        throw new Error('Error al cargar los pedidos');
+      }
+      const data = await response.json();
+      setOrders(data);
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (orderId, newStatus) => {
+    try {
+      const response = await fetchWithAuth(`/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar el estado del pedido');
+      }
+
+      setOrders(orders.map(order => 
+        order._id === orderId ? { ...order, status: newStatus } : order
+      ));
+      showAlert('Estado actualizado correctamente', 'success');
+    } catch (err) {
+      console.error('Error:', err);
+      showAlert('Error al actualizar el estado', 'error');
+    }
+  };
+
+  const handleDelete = async (orderId) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará el pedido de forma permanente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const response = await fetchWithAuth(`/orders/${orderId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar el pedido');
+      }
+
+      setOrders(orders.filter(order => order._id !== orderId));
+      showAlert('Pedido eliminado correctamente', 'success');
+    } catch (err) {
+      console.error('Error:', err);
+      showAlert('Error al eliminar el pedido', 'error');
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Código', 'Cliente', 'Email', 'Teléfono', 'Dirección', 'Total', 'Estado', 'Fecha'];
+    const csvData = orders.map(order => [
+      order.code,
+      order.userName,
+      order.userEmail,
+      order.userPhone,
+      order.userAddress,
+      order.total,
+      order.status,
+      new Date(order.createdAt).toLocaleDateString()
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `pedidos-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const filteredOrders = orders.filter(order => 
+    order.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.userEmail.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage) || 1;
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  if (loading) return <div className="container mt-4">Cargando...</div>;
+  if (error) return <div className="container mt-4 alert alert-danger">{error}</div>;
+
+  return (
+    <div className="container mt-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>Gestión de Pedidos</h1>
+        <button 
+          className="btn btn-success"
+          onClick={exportToCSV}
+        >
+          <i className="bi bi-file-earmark-excel me-2"></i>
+          Exportar a CSV
+        </button>
+      </div>
+
+      <div className="mb-4">
+        <div className="input-group">
+          <span className="input-group-text">
+            <i className="bi bi-search"></i>
+          </span>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Buscar pedidos por código, nombre o email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="table-responsive">
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Cliente</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Total</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedOrders.map(order => (
+              <>
+                <tr key={order._id}>
+                  <td>
+                    <button
+                      className="btn btn-link p-0"
+                      onClick={() => setExpandedOrderId(expandedOrderId === order._id ? null : order._id)}
+                      aria-expanded={expandedOrderId === order._id}
+                      aria-controls={`order-details-${order._id}`}
+                      title={expandedOrderId === order._id ? 'Ocultar detalle' : 'Ver detalle'}
+                    >
+                      <i className={`bi ${expandedOrderId === order._id ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
+                    </button>
+                    {order.code}
+                  </td>
+                  <td>{order.userName}</td>
+                  <td>{order.userEmail}</td>
+                  <td>{order.userPhone}</td>
+                  <td>${order.total}</td>
+                  <td>
+                    <select
+                      className="form-select"
+                      value={order.status}
+                      onChange={(e) => handleStatusChange(order._id, e.target.value)}
+                    >
+                      <option value="pendiente">Pendiente</option>
+                      <option value="procesando">Procesando</option>
+                      <option value="enviado">Enviado</option>
+                      <option value="completado">Completado</option>
+                      <option value="cancelado">Cancelado</option>
+                    </select>
+                  </td>
+                  <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => handleDelete(order._id)}
+                    >
+                      <i className="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {expandedOrderId === order._id && (
+                  <tr id={`order-details-${order._id}`}>
+                    <td colSpan="8">
+                      <div className="p-3 bg-light border rounded">
+                        <h6 className="mb-2">Detalle de productos</h6>
+                        <table className="table table-sm mb-0">
+                          <thead>
+                            <tr>
+                              <th>Producto</th>
+                              <th>Cantidad</th>
+                              <th>Precio unitario</th>
+                              <th>Subtotal</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {order.items.map((item, idx) => (
+                              <tr key={idx}>
+                                <td>{item.product?.name || 'Producto eliminado'}</td>
+                                <td>{item.quantity}</td>
+                                <td>${item.price}</td>
+                                <td>${item.price * item.quantity}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="d-flex justify-content-between align-items-center mt-4">
+        <div>
+          <label className="me-2">Mostrar:</label>
+          <select
+            value={itemsPerPage}
+            onChange={e => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="form-select d-inline-block w-auto"
+          >
+            {[5, 10, 20, 50].map(num => (
+              <option key={num} value={num}>{num}</option>
+            ))}
+          </select>
+          <span className="ms-2">pedidos por página</span>
+        </div>
+        <div>
+          Página {currentPage} de {totalPages}
+          <button
+            className="btn btn-sm btn-secondary ms-2"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            Anterior
+          </button>
+          <button
+            className="btn btn-sm btn-secondary ms-2"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default OrdersAdmin; 

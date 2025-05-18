@@ -1,3 +1,8 @@
+// Importar estilos de páginas
+@use './pages/history';
+@use './pages/contact';
+@use './pages/cart';
+
 // Variables
 $primary-color: #28a745;
 $secondary-color: #218838;
@@ -39,11 +44,6 @@ main {
   flex: 1;
   padding: 2rem 0;
 }
-
-// Importar estilos de páginas
-@import './pages/history';
-@import './pages/contact';
-@import './pages/cart';
 
 // Estilos del Navbar
 .navbar {

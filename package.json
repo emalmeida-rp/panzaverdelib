@@ -14,13 +14,16 @@
     "@emotion/styled": "^11.14.0",
     "animate.css": "^4.1.1",
     "aos": "^2.3.4",
+    "axios": "^1.9.0",
     "bootstrap": "^5.3.5",
     "bootstrap-icons": "^1.11.3",
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.9",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.5.3",
-    "sass": "^1.87.0"
+    "sass": "^1.87.0",
+    "sweetalert2": "^11.21.1",
+    "sweetalert2-react-content": "^5.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

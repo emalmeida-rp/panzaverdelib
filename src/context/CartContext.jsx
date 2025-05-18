@@ -10,12 +10,15 @@ export const CartProvider = ({ children }) => {
   // Agregar producto al carrito
   const addToCart = (product) => {
     setCart(prev => {
-      const found = prev.find(item => item.name === product.name);
+      const found = prev.find(item => item._id === product._id);
       if (found) {
-        // Si ya está, aumenta la cantidad
-        return prev.map(item =>
-          item.name === product.name ? { ...item, quantity: item.quantity + 1 } : item
-        );
+        // Si ya está y hay stock disponible, aumenta la cantidad
+        if (found.quantity < product.stock) {
+          return prev.map(item =>
+            item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
+          );
+        }
+        return prev; // Si no hay stock, no hace nada
       } else {
         // Si no está, lo agrega con cantidad 1
         return [...prev, { ...product, quantity: 1 }];
@@ -24,15 +27,17 @@ export const CartProvider = ({ children }) => {
   };
 
   // Quitar producto del carrito
-  const removeFromCart = (productName) => {
-    setCart(prev => prev.filter(item => item.name !== productName));
+  const removeFromCart = (productId) => {
+    setCart(prev => prev.filter(item => item._id !== productId));
   };
 
   // Cambiar cantidad
-  const updateQuantity = (productName, quantity) => {
+  const updateQuantity = (productId, quantity, maxStock) => {
+    if (quantity < 1 || quantity > maxStock) return;
+    
     setCart(prev =>
       prev.map(item =>
-        item.name === productName ? { ...item, quantity } : item
+        item._id === productId ? { ...item, quantity } : item
       )
     );
   };
@@ -43,14 +48,19 @@ export const CartProvider = ({ children }) => {
   // Calcular total
   const getTotal = () => {
     return cart.reduce((acc, item) => {
-      // Extraer el número del precio (ej: "$1500" -> 1500)
-      const price = parseInt(item.price.replace(/[^0-9]/g, '')) || 0;
-      return acc + price * item.quantity;
+      return acc + (item.price * item.quantity);
     }, 0);
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, getTotal }}>
+    <CartContext.Provider value={{ 
+      cart, 
+      addToCart, 
+      removeFromCart, 
+      updateQuantity, 
+      clearCart, 
+      getTotal 
+    }}>
       {children}
     </CartContext.Provider>
   );

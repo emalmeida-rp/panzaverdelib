@@ -209,7 +209,7 @@ const Contact = () => {
                 <div className="invalid-feedback">Debes aceptar los términos y condiciones</div>
               </div>
 
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="btn btn-success">
                 Confirmar
               </button>
             </form>

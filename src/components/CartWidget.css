@@ -1,0 +1,10 @@
+/* CartWidget flotante solo en escritorio */
+.cart-widget-float {
+  display: none;
+}
+ 
+@media (min-width: 992px) {
+  .cart-widget-float {
+    display: block !important;
+  }
+} 
