@@ -19,7 +19,7 @@ const ItemListContainer = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetchWithAuth(`${API_URL}/api/products`);
+        const response = await fetch(`${API_URL}/api/products`);
         if (!response.ok) {
           throw new Error('Error al cargar los productos');
         }
