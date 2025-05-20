@@ -1,4 +1,4 @@
-const API_URL = 'panzaverdelib-be-production.up.railway.app';
+const API_URL = 'https://panzaverdelib-be-production.up.railway.app';
 
 export const fetchWithAuth = async (endpoint, options = {}) => {
   const token = localStorage.getItem('adminToken');
@@ -22,8 +22,18 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
   if (response.status === 401) {
     // Token expirado o inválido
     localStorage.removeItem('adminToken');
-    window.location.href = '/admin/login';
     throw new Error('Sesión expirada');
+  }
+
+  if (!response.ok) {
+    let errorMsg = 'Error en el servidor';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData.message || errorMsg;
+    } catch {
+      // Si no es JSON, deja el mensaje por defecto
+    }
+    throw new Error(errorMsg);
   }
 
   return response;

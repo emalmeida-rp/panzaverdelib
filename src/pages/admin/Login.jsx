@@ -12,6 +12,7 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { showAlert } = useAlert();
+  // const API_URL = import.meta.env.VITE_API_URL;
 
   const handleChange = (e) => {
     const { name, value } = e.target;

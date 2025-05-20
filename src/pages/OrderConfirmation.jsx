@@ -12,7 +12,7 @@ const OrderConfirmation = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/orders/code/${code}`);
+        const response = await fetch(`${API_URL}api/orders/code/${code}`);
         if (response.ok) {
           const data = await response.json();
           setOrder(data);
