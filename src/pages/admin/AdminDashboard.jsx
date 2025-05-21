@@ -6,6 +6,9 @@ import Swal from 'sweetalert2';
 import GalleryAdmin from './GalleryAdmin';
 import OrdersAdmin from './OrdersAdmin';
 import Modal from 'react-bootstrap/Modal';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+dayjs.extend(utc);
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('productos');
@@ -19,6 +22,8 @@ const AdminDashboard = () => {
   const { showAlert } = useAlert();
   const [showNotif, setShowNotif] = useState(false);
   const [notifOrders, setNotifOrders] = useState([]);
+  const [completedOrders, setCompletedOrders] = useState([]);
+  const [loadingCompleted, setLoadingCompleted] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -54,9 +59,66 @@ const AdminDashboard = () => {
       } catch {}
     };
     fetchNotifs();
-    interval = setInterval(fetchNotifs, 10000);
+    interval = setInterval(fetchNotifs, 300000); // 5 minutos
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch pedidos completados
+  useEffect(() => {
+    if (activeTab === 'historico') {
+      setLoadingCompleted(true);
+      fetchWithAuth('/orders')
+        .then(res => res.ok ? res.json() : [])
+        .then(data => {
+          setCompletedOrders(data.filter(o => o.status === 'completado'));
+        })
+        .finally(() => setLoadingCompleted(false));
+    }
+  }, [activeTab]);
+
+  // KPIs
+  const now = dayjs();
+  const kpiHoy = completedOrders.filter(o => dayjs(o.createdAt).local().isSame(now, 'day'));
+  const kpiMes = completedOrders.filter(o => dayjs(o.createdAt).local().isSame(now, 'month'));
+  const kpiAnio = completedOrders.filter(o => dayjs(o.createdAt).local().isSame(now, 'year'));
+  const suma = arr => arr.reduce((acc, o) => acc + (o.total || 0), 0);
+
+  // Refrescar pedidos y completados tras cambio de estado
+  const refreshOrders = async () => {
+    try {
+      const response = await fetchWithAuth('/orders');
+      if (!response.ok) return;
+      const data = await response.json();
+      setProducts(products); // No afecta productos
+      setCompletedOrders(data.filter(o => o.status === 'completado'));
+    } catch {}
+  };
+
+  const handleStatusChange = async (orderId, newStatus) => {
+    try {
+      const response = await fetchWithAuth(`/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar el estado del pedido');
+      }
+
+      setCompletedOrders(completedOrders.map(order => 
+        order._id === orderId ? { ...order, status: newStatus } : order
+      ));
+      showAlert('Estado actualizado correctamente', 'success');
+      // Refrescar ambos listados
+      refreshOrders();
+    } catch (err) {
+      console.error('Error:', err);
+      showAlert('Error al actualizar el estado', 'error');
+    }
+  };
 
   const handleDelete = async (productId) => {
     const result = await Swal.fire({
@@ -196,6 +258,14 @@ const AdminDashboard = () => {
             Pedidos
           </button>
         </li>
+        <li className="nav-item">
+          <button
+            className={`nav-link${activeTab === 'historico' ? ' active' : ''}`}
+            onClick={() => setActiveTab('historico')}
+          >
+            Histórico
+          </button>
+        </li>
       </ul>
 
       {/* Contenido de la pestaña activa */}
@@ -312,6 +382,101 @@ const AdminDashboard = () => {
       )}
       {activeTab === 'pedidos' && (
         <OrdersAdmin />
+      )}
+      {activeTab === 'historico' && (
+        <>
+          <div className="mb-4">
+            <h3 className="mb-3">KPIs de Pedidos Completados</h3>
+            <div className="row g-3 mb-3">
+              <div className="col-md-4">
+                <div className="card card-body text-center bg-light border-success border-2">
+                  <h5 className="mb-1">Hoy</h5>
+                  <div className="fw-bold text-success">${suma(kpiHoy)}</div>
+                  <div className="small">{kpiHoy.length} pedidos</div>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="card card-body text-center bg-light border-primary border-2">
+                  <h5 className="mb-1">Este mes</h5>
+                  <div className="fw-bold text-primary">${suma(kpiMes)}</div>
+                  <div className="small">{kpiMes.length} pedidos</div>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="card card-body text-center bg-light border-dark border-2">
+                  <h5 className="mb-1">Este año</h5>
+                  <div className="fw-bold text-dark">${suma(kpiAnio)}</div>
+                  <div className="small">{kpiAnio.length} pedidos</div>
+                </div>
+              </div>
+            </div>
+            <button className="btn btn-success mb-3" onClick={() => {
+              const headers = ['Código', 'Cliente', 'Email', 'Teléfono', 'Dirección', 'Total', 'Estado', 'Fecha'];
+              const csvData = completedOrders.map(order => [
+                order.code,
+                order.userName,
+                order.userEmail,
+                order.userPhone,
+                order.userAddress,
+                order.total,
+                order.status,
+                dayjs(order.createdAt).format('YYYY-MM-DD')
+              ]);
+              const csvContent = [
+                headers.join(','),
+                ...csvData.map(row => row.join(','))
+              ].join('\n');
+              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+              const link = document.createElement('a');
+              link.href = URL.createObjectURL(blob);
+              link.download = `historico-pedidos-${dayjs().format('YYYY-MM-DD')}.csv`;
+              link.click();
+            }}>
+              <i className="bi bi-file-earmark-excel me-2"></i>
+              Exportar histórico a CSV
+            </button>
+          </div>
+          <div className="table-responsive">
+            <table className="table table-striped">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Cliente</th>
+                  <th>Email</th>
+                  <th>Teléfono</th>
+                  <th>Total</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingCompleted ? (
+                  [...Array(8)].map((_, idx) => (
+                    <tr key={idx} className="placeholder-glow">
+                      {Array.from({ length: 7 }).map((_, cidx) => (
+                        <td key={cidx}>
+                          <span className="placeholder col-10" style={{ height: 18, display: 'inline-block', borderRadius: 4 }}></span>
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : (
+                  completedOrders.map(order => (
+                    <tr key={order._id}>
+                      <td>{order.code}</td>
+                      <td>{order.userName}</td>
+                      <td>{order.userEmail}</td>
+                      <td>{order.userPhone}</td>
+                      <td>${order.total}</td>
+                      <td><span className="badge bg-success">Completado</span></td>
+                      <td>{dayjs(order.createdAt).format('YYYY-MM-DD')}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Modal de notificaciones */}
