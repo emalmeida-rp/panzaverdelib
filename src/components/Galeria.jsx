@@ -8,7 +8,7 @@ const Galeria = () => {
   useEffect(() => {
     const fetchGallery = async () => {
       try {
-        const res = await fetch(`${API_URL}api/gallery`);
+        const res = await fetch(`${API_URL}/gallery`);
         const data = await res.json();
         setTrabajos(data);
       } catch (err) {

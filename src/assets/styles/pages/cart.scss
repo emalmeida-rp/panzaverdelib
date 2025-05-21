@@ -75,4 +75,13 @@
       }
     }
   }
+}
+
+.no-tilt {
+  transform: none !important;
+  transition: none !important;
+  &:hover {
+    transform: none !important;
+    transition: none !important;
+  }
 } 

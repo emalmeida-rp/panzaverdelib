@@ -87,7 +87,14 @@ const CartWidget = () => {
             html: `<p>Tu código de pedido es: <b>${data.code}</b></p>
                    <h4>Resumen:</h4>
                    <ul style="text-align:left;">${orderData.items.map(item => `<li>${item.quantity} x ${cart.find(p => p._id === item.product)?.name || 'Producto'}</li>`).join('')}</ul>
-                   <p><b>Total: $${orderData.total}</b></p>`,
+                   <p><b>Total: $${orderData.total}</b></p>
+                   <div style='display: flex; align-items: center; gap: 16px; margin-top: 24px;'>
+                     <img src='https://placehold.co/100x100?text=QR' alt='QR de pago' style='width: 100px; height: 100px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);'>
+                     <div style='font-size: 0.95em; text-align: left;'>
+                       Te dejamos el código QR para que puedas adelantar el pago, o bien aguardar a que te contactemos y coordinar el pedido.<br>
+                       <strong>¡Muchas gracias por tu confianza!</strong>
+                     </div>
+                   </div>`,
             confirmButtonText: 'Aceptar'
           });
         } else {
@@ -99,12 +106,18 @@ const CartWidget = () => {
     }
   };
 
-  // Flotante solo en escritorio
+  // Flotante en escritorio y mobile
   return (
     <>
       <div
-        className={`cart-widget-float d-none d-lg-block`}
-        style={{ position: 'fixed', right: 24, bottom: 24, zIndex: 1050 }}
+        className="cart-widget-float"
+        style={{
+          position: 'fixed',
+          right: 16,
+          left: 'auto',
+          bottom: 16,
+          zIndex: 1050
+        }}
         onClick={handleDropdown}
         ref={dropdownRef}
       >
@@ -166,7 +179,7 @@ const CartWidget = () => {
                 </button>
                 <button
                   type="button"
-                  className="btn btn-success"
+                  className="btn btn-success no-tilt"
                   disabled={cart.length === 0}
                   onClick={handleConfirmPurchase}
                 >
@@ -196,8 +209,17 @@ const CartWidget = () => {
                     </li>
                   ))}
                 </ul>
-                <div className="text-end">
+                <div className="text-end mb-3">
                   <strong>Total: ${getTotal()}</strong>
+                </div>
+                <div className="d-flex align-items-center gap-3 mt-4" style={{ minHeight: 100 }}>
+                  <div style={{ minWidth: 100 }}>
+                    <img src="https://placehold.co/100x100?text=QR" alt="QR de pago" className="img-fluid rounded shadow" />
+                  </div>
+                  <div className="flex-grow-1 small text-start">
+                    Te dejamos el código QR para que puedas adelantar el pago, o bien aguardar a que te contactemos y coordinar el pedido.<br />
+                    <strong>¡Muchas gracias por tu confianza!</strong>
+                  </div>
                 </div>
               </div>
               <div className="modal-footer d-flex gap-2">
