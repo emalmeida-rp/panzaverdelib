@@ -33,7 +33,27 @@ const ItemListContainer = () => {
     fetchProducts();
   }, []);
 
-  if (loading) return <div className="container mt-4">Cargando...</div>;
+  if (loading) return (
+    <div className="container mt-4">
+      <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 tienda-body">
+        {[...Array(8)].map((_, idx) => (
+          <div className="col" key={idx}>
+            <div className="card h-100 bg-light card-products placeholder-glow">
+              <div className="card-img-top img-market placeholder" style={{ height: 180, background: '#e0e0e0', borderRadius: 12 }}></div>
+              <div className="card-header text-center">
+                <h3 className="h5 mb-0 placeholder col-8" style={{ height: 24, background: '#d0d0d0', borderRadius: 6 }}></h3>
+              </div>
+              <div className="card-body text-center">
+                <h4 className="card-text placeholder col-6" style={{ height: 20, background: '#e0e0e0', borderRadius: 6 }}></h4>
+                <p className="card-text placeholder col-10" style={{ height: 16, background: '#f0f0f0', borderRadius: 6 }}></p>
+                <button className="btn btn-secondary w-100 disabled placeholder col-8" style={{ height: 38, background: '#d0d0d0', borderRadius: 8 }} disabled></button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   if (error) return <div className="container mt-4 alert alert-danger">{error}</div>;
 
   return (

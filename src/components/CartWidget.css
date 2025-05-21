@@ -101,9 +101,28 @@
     min-width: unset;
     width: 98vw;
     max-width: 98vw;
-    left: 1vw !important;
-    right: 1vw !important;
+    left: 50vw !important;
+    right: unset !important;
+    transform: translateX(-50%) !important;
     padding: 1rem 0.5rem 0.5rem 0.5rem;
     box-sizing: border-box;
+  }
+}
+
+@media (max-width: 650px) {
+  .cart-widget-float .dropdown-menu {
+    position: fixed !important;
+    left: 5vw !important;
+    right: unset !important;
+    transform: translateX(-50%) !important;
+    top: auto !important;
+    bottom: 85px !important;
+    min-width: unset;
+    width: 98vw;
+    max-width: 98vw;
+    height: auto;
+    padding: 1rem 0.5rem 0.5rem 0.5rem;
+    box-sizing: border-box;
+    z-index: 9999;
   }
 } 

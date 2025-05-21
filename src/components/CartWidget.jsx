@@ -12,6 +12,8 @@ const CartWidget = () => {
   const { cart, removeFromCart, updateQuantity, getTotal, clearCart } = useCart();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [orderStatus, setOrderStatus] = useState(null);
+  const [orderStatusList, setOrderStatusList] = useState([]);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
@@ -36,7 +38,57 @@ const CartWidget = () => {
     };
   }, [showDropdown]);
 
+  // Al abrir el dropdown, buscar el código de pedido en localStorage y consultar el estado
+  useEffect(() => {
+    if (showDropdown) {
+      let orderCodes = [];
+      try {
+        orderCodes = JSON.parse(localStorage.getItem('orderCodes')) || [];
+      } catch {
+        orderCodes = [];
+      }
+      if (orderCodes.length > 0) {
+        Promise.all(orderCodes.map(code =>
+          fetch(`${API_URL}/orders/code/${code}`)
+            .then(res => {
+              if (res.status === 404) {
+                // Eliminar el código si el pedido fue eliminado
+                let codes = orderCodes.filter(c => c !== code);
+                localStorage.setItem('orderCodes', JSON.stringify(codes));
+                if (localStorage.getItem('lastOrderCode') === code) {
+                  localStorage.removeItem('lastOrderCode');
+                }
+                return null;
+              }
+              return res.ok ? res.json() : null;
+            })
+            .then(data => data && data.status ? { code, status: data.status } : null)
+        )).then(results => {
+          setOrderStatusList(results.filter(Boolean));
+        });
+      } else {
+        setOrderStatusList([]);
+      }
+    }
+  }, [showDropdown, API_URL]);
+
   const handleConfirmPurchase = async () => {
+    // Validación: máximo 5 pedidos en localStorage
+    let orderCodes = [];
+    try {
+      orderCodes = JSON.parse(localStorage.getItem('orderCodes')) || [];
+    } catch {
+      orderCodes = [];
+    }
+    if (orderCodes.length >= 5) {
+      await MySwal.fire({
+        icon: 'warning',
+        title: 'Límite de pedidos alcanzado',
+        text: 'No puedes cargar más pedidos. Aguarda que se resuelvan los anteriores para continuar.',
+        confirmButtonText: 'Aceptar'
+      });
+      return;
+    }
     if (cart.length === 0) return;
     const { value: formValues } = await MySwal.fire({
       title: 'Facilita tus datos de contacto para coordinar la entrega',
@@ -81,6 +133,16 @@ const CartWidget = () => {
         const data = await response.json();
         if (response.ok) {
           clearCart();
+          // Guardar el código del pedido en localStorage (array)
+          let orderCodes = [];
+          try {
+            orderCodes = JSON.parse(localStorage.getItem('orderCodes')) || [];
+          } catch {
+            orderCodes = [];
+          }
+          orderCodes.push(data.code);
+          localStorage.setItem('orderCodes', JSON.stringify(orderCodes));
+          localStorage.setItem('lastOrderCode', data.code);
           await MySwal.fire({
             icon: 'success',
             title: '¡Pedido realizado!',
@@ -125,6 +187,24 @@ const CartWidget = () => {
     }
   };
 
+  // Función para obtener color e ícono según estado
+  const getOrderStatusVisual = (status) => {
+    switch (status) {
+      case 'pendiente':
+        return { color: 'text-warning', icon: 'bi-clock' };
+      case 'procesando':
+        return { color: 'text-primary', icon: 'bi-gear' };
+      case 'enviado':
+        return { color: 'text-orange', icon: 'bi-truck' };
+      case 'completado':
+        return { color: 'text-success', icon: 'bi-check-circle' };
+      case 'cancelado':
+        return { color: 'text-danger', icon: 'bi-x-circle' };
+      default:
+        return { color: 'text-secondary', icon: 'bi-question-circle' };
+    }
+  };
+
   // Flotante en escritorio y mobile
   return (
     <>
@@ -155,6 +235,30 @@ const CartWidget = () => {
         {showDropdown && (
           <div className="dropdown-menu show p-3" style={{ minWidth: 320, right: 0, left: 'auto', position: 'absolute', bottom: 80 }}>
             <h6 className="dropdown-header">Carrito</h6>
+            {/* Estado del pedido */}
+            {orderStatusList.length > 0 && (
+              <div className="alert alert-info py-2 px-3 mb-2">
+                <strong>Seguimiento de pedidos:</strong>
+                <ul className="mb-0 ps-3">
+                  {orderStatusList.map((order, idx) => {
+                    const visual = getOrderStatusVisual(order.status);
+                    return (
+                      <li key={order.code} className="mb-1 d-flex align-items-center gap-2">
+                        <span className="fw-bold">{order.code}</span>
+                        <i className={`bi ${visual.icon} ${visual.color} ms-1`} 
+                           style={{ fontSize: '1.1em', textShadow: '0 1px 4px rgba(0,0,0,0.18), 0 0px 1px #fff', filter: 'drop-shadow(0 1px 2px #fff)' }}
+                           aria-label={order.status}
+                        ></i>
+                        <span className={`fw-bold text-capitalize ${visual.color}`}
+                              style={{ textShadow: '0 0 2px #000, 0 1px 2px #000' }}>
+                          {order.status}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
             {cart.length === 0 ? (
               <span className="dropdown-item-text">El carrito está vacío</span>
             ) : (
