@@ -5,6 +5,7 @@ import { useAlert } from '../../context/AlertContext';
 import Swal from 'sweetalert2';
 import GalleryAdmin from './GalleryAdmin';
 import OrdersAdmin from './OrdersAdmin';
+import Modal from 'react-bootstrap/Modal';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('productos');
@@ -16,6 +17,8 @@ const AdminDashboard = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10); // valor por defecto
   const navigate = useNavigate();
   const { showAlert } = useAlert();
+  const [showNotif, setShowNotif] = useState(false);
+  const [notifOrders, setNotifOrders] = useState([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -35,6 +38,24 @@ const AdminDashboard = () => {
     };
 
     fetchProducts();
+  }, []);
+
+  // Polling para notificaciones de nuevos pedidos
+  useEffect(() => {
+    let interval;
+    const fetchNotifs = async () => {
+      try {
+        const response = await fetchWithAuth('/orders');
+        if (!response.ok) return;
+        const data = await response.json();
+        // Solo pedidos pendientes, últimos 5
+        const pending = data.filter(o => o.status === 'pendiente').slice(0, 5);
+        setNotifOrders(pending);
+      } catch {}
+    };
+    fetchNotifs();
+    interval = setInterval(fetchNotifs, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleDelete = async (productId) => {
@@ -90,7 +111,37 @@ const AdminDashboard = () => {
     currentPage * itemsPerPage
   );
 
-  if (loading) return <div className="container mt-4">Cargando...</div>;
+  if (loading && activeTab === 'productos') return (
+    <div className="container mt-4">
+      <div className="table-responsive">
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th>Imagen</th>
+              <th>Nombre</th>
+              <th>Descripción</th>
+              <th>Precio</th>
+              <th>Stock</th>
+              <th>Disponible</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...Array(8)].map((_, idx) => (
+              <tr key={idx} className="placeholder-glow">
+                {Array.from({ length: 7 }).map((_, cidx) => (
+                  <td key={cidx}>
+                    <span className="placeholder col-10" style={{ height: 18, display: 'inline-block', borderRadius: 4 }}></span>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   if (error) return <div className="container mt-4 alert alert-danger">{error}</div>;
 
   return (
@@ -98,6 +149,14 @@ const AdminDashboard = () => {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Panel de Administración</h1>
         <div className="d-flex gap-2">
+          <button className="btn btn-outline-primary position-relative" onClick={() => setShowNotif(true)}>
+            <i className="bi bi-bell" style={{ fontSize: 22 }}></i>
+            {notifOrders.length > 0 && (
+              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {notifOrders.length}
+              </span>
+            )}
+          </button>
           <Link to="/admin/products/new" className="btn btn-primary">
             Agregar Producto
           </Link>
@@ -254,6 +313,30 @@ const AdminDashboard = () => {
       {activeTab === 'pedidos' && (
         <OrdersAdmin />
       )}
+
+      {/* Modal de notificaciones */}
+      <Modal show={showNotif} onHide={() => setShowNotif(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Notificaciones de nuevos pedidos</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {notifOrders.length === 0 ? (
+            <div className="text-center text-muted">No hay pedidos nuevos pendientes.</div>
+          ) : (
+            <ul className="list-group">
+              {notifOrders.map(order => (
+                <li key={order._id} className="list-group-item d-flex justify-content-between align-items-center">
+                  <span className="fw-bold">{order.code}</span>
+                  <span className="badge bg-warning text-dark">Pendiente</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <button className="btn btn-secondary" onClick={() => setShowNotif(false)}>Cerrar</button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

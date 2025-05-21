@@ -126,7 +126,99 @@ const OrdersAdmin = () => {
     currentPage * itemsPerPage
   );
 
-  if (loading) return <div className="container mt-4">Cargando...</div>;
+  if (loading) return (
+    <div className="container mt-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>Gestión de Pedidos</h1>
+        <button 
+          className="btn btn-success"
+          onClick={exportToCSV}
+        >
+          <i className="bi bi-file-earmark-excel me-2"></i>
+          Exportar a CSV
+        </button>
+      </div>
+
+      <div className="mb-4">
+        <div className="input-group">
+          <span className="input-group-text">
+            <i className="bi bi-search"></i>
+          </span>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Buscar pedidos por código, nombre o email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="table-responsive">
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Cliente</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Total</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...Array(8)].map((_, idx) => (
+              <tr key={idx} className="placeholder-glow">
+                {Array.from({ length: 8 }).map((_, cidx) => (
+                  <td key={cidx}>
+                    <span className="placeholder col-10" style={{ height: 18, display: 'inline-block', borderRadius: 4 }}></span>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="d-flex justify-content-between align-items-center mt-4">
+        <div>
+          <label className="me-2">Mostrar:</label>
+          <select
+            value={itemsPerPage}
+            onChange={e => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="form-select d-inline-block w-auto"
+          >
+            {[5, 10, 20, 50].map(num => (
+              <option key={num} value={num}>{num}</option>
+            ))}
+          </select>
+          <span className="ms-2">pedidos por página</span>
+        </div>
+        <div>
+          Página {currentPage} de {totalPages}
+          <button
+            className="btn btn-sm btn-secondary ms-2"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            Anterior
+          </button>
+          <button
+            className="btn btn-sm btn-secondary ms-2"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </div>
+  );
   if (error) return <div className="container mt-4 alert alert-danger">{error}</div>;
 
   return (
