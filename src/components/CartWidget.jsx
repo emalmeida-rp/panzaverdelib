@@ -88,13 +88,32 @@ const CartWidget = () => {
                    <h4>Resumen:</h4>
                    <ul style="text-align:left;">${orderData.items.map(item => `<li>${item.quantity} x ${cart.find(p => p._id === item.product)?.name || 'Producto'}</li>`).join('')}</ul>
                    <p><b>Total: $${orderData.total}</b></p>
-                   <div style='display: flex; align-items: center; gap: 16px; margin-top: 24px;'>
-                     <img src='https://placehold.co/100x100?text=QR' alt='QR de pago' style='width: 100px; height: 100px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);'>
+                   <div class="swal-qr-row" style='display: flex; align-items: center; gap: 16px; margin-top: 24px;'>
+                     <img src='https://placehold.co/160x160?text=QR' alt='QR de pago' style='width: 160px; height: 160px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);'>
                      <div style='font-size: 0.95em; text-align: left;'>
                        Te dejamos el código QR para que puedas adelantar el pago, o bien aguardar a que te contactemos y coordinar el pedido.<br>
                        <strong>¡Muchas gracias por tu confianza!</strong>
                      </div>
-                   </div>`,
+                   </div>
+                   <style>
+                     @media (max-width: 600px) {
+                       .swal-qr-row {
+                         flex-direction: column !important;
+                         align-items: center !important;
+                         text-align: center !important;
+                       }
+                       .swal-qr-row img {
+                         width: 80vw !important;
+                         height: 80vw !important;
+                         max-width: 320px !important;
+                         max-height: 320px !important;
+                       }
+                       .swal-qr-row div {
+                         text-align: center !important;
+                         margin-top: 1rem;
+                       }
+                     }
+                   </style>`,
             confirmButtonText: 'Aceptar'
           });
         } else {

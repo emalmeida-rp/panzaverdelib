@@ -86,11 +86,24 @@
   margin-bottom: 0.5rem;
 }
 
+/* Elimino la media query que centraba el botón en mobile */
 @media (max-width: 991px) {
   .cart-widget-float {
     right: 50% !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
     bottom: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .cart-widget-float .dropdown-menu {
+    min-width: unset;
+    width: 98vw;
+    max-width: 98vw;
+    left: 1vw !important;
+    right: 1vw !important;
+    padding: 1rem 0.5rem 0.5rem 0.5rem;
+    box-sizing: border-box;
   }
 } 
