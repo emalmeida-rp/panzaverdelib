@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { useCart } from '../context/CartContext';
-import { fetch } from '../utils/api';
+import { fetchWithAuth } from '../utils/api';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -19,10 +19,7 @@ const ItemListContainer = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch(`${API_URL}api/products`);
-        if (!response.ok) {
-          throw new Error('Error al cargar los productos');
-        }
+        const response = await fetchWithAuth('/products');
         const data = await response.json();
         setProducts(data);
       } catch (err) {

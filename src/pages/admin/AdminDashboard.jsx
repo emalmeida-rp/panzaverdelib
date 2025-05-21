@@ -75,7 +75,7 @@ const AdminDashboard = () => {
   const handleLogout = () => {
     showAlert('Cerrando sesión', 'info');
     localStorage.removeItem('adminToken');
-    navigate('/admin/login');
+    navigate('/belpvsrvadm-ey/login');
   };
 
   const filteredProducts = products.filter(product => 

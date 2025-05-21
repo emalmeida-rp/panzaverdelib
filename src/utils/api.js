@@ -1,4 +1,4 @@
-const API_URL = 'https://panzaverdelib-be-production.up.railway.app';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export const fetchWithAuth = async (endpoint, options = {}) => {
   const token = localStorage.getItem('adminToken');

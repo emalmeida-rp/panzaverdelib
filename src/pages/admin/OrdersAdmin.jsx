@@ -173,8 +173,8 @@ const OrdersAdmin = () => {
           </thead>
           <tbody>
             {paginatedOrders.map(order => (
-              <>
-                <tr key={order._id}>
+              <React.Fragment key={order._id}>
+                <tr>
                   <td>
                     <button
                       className="btn btn-link p-0"
@@ -243,7 +243,7 @@ const OrdersAdmin = () => {
                     </td>
                   </tr>
                 )}
-              </>
+              </React.Fragment>
             ))}
           </tbody>
         </table>

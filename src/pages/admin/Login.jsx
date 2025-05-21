@@ -50,8 +50,8 @@ const Login = () => {
       localStorage.setItem('adminToken', data.accessToken);
       showAlert('Autenticación correcta', 'success');
       
-      // Redirigir a la página original o al dashboard
-      const from = location.state?.from?.pathname || '/admin';
+      // Redirigir a la página original o al dashboard oculto
+      const from = location.state?.from?.pathname || '/belpvsrvadm-ey';
       navigate(from, { replace: true });
     } catch (err) {
       console.error('Error completo:', err);

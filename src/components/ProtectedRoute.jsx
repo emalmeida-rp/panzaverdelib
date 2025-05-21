@@ -6,7 +6,7 @@ const ProtectedRoute = ({ children }) => {
 
   if (!token) {
     // Guardar la ubicación actual para redirigir después del login
-    return <Navigate to="/admin/login" state={{ from: location }} replace />;
+    return <Navigate to="/belpvsrvadm-ey/login" state={{ from: location }} replace />;
   }
 
   return children;

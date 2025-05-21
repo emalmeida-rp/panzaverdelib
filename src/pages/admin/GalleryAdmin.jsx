@@ -3,8 +3,8 @@ import { useAlert } from '../../context/AlertContext';
 import { fetchWithAuth } from '../../utils/api';
 import axios from 'axios';
 
-const CLOUDINARY_UPLOAD_PRESET = 'upload_lpv'; // Reemplaza por tu upload_preset
-const CLOUDINARY_CLOUD_NAME = 'libpanzaverdearcloudinary'; // Reemplaza por tu cloud_name
+const CLOUDINARY_UPLOAD_PRESET = 'upload_lpv';
+const CLOUDINARY_CLOUD_NAME = 'libpanzaverdearcloudinary'; 
 const API_URL = import.meta.env.VITE_API_URL;
 
 const GalleryAdmin = () => {
@@ -22,7 +22,7 @@ const GalleryAdmin = () => {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/gallery`);
+        const res = await fetchWithAuth('/gallery');
         const data = await res.json();
         setImages(data);
       } catch (err) {

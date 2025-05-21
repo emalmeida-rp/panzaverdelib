@@ -90,7 +90,7 @@ const ProductForm = () => {
         isEditing ? 'Producto actualizado correctamente' : 'Producto creado correctamente',
         'success'
       );
-      navigate('/admin');
+      navigate('/belpvsrvadm-ey');
     } catch (err) {
       setError(err.message);
     } finally {

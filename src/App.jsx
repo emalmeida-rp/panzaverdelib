@@ -34,7 +34,7 @@ function App() {
                 <Route path="/history" element={<History />} />
                 <Route path="/gallery" element={<Gallery />} />
                 <Route path="/contact" element={<Contact />} />
-                <Route path="/admin/login" element={<Login />} />
+                <Route path="/belpvsrvadm-ey/login" element={<Login />} />
                 <Route 
                   path="/belpvsrvadm-ey" 
                   element={
