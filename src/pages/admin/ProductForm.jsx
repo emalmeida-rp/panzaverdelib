@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fetchWithAuth } from '../../utils/api';
 import { useAlert } from '../../context/AlertContext';
+import axios from 'axios';
+
+const CLOUDINARY_UPLOAD_PRESET = 'upload_lpv';
+const CLOUDINARY_CLOUD_NAME = 'libpanzaverdearcloudinary';
 
 const ProductForm = () => {
   const navigate = useNavigate();
@@ -18,7 +22,9 @@ const ProductForm = () => {
     isAvailable: true
   });
 
+  const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -58,12 +64,39 @@ const ProductForm = () => {
     );
   };
 
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+    if (e.target.files[0]) {
+      setFormData(prev => ({ ...prev, image: '' }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    if (!isValidImage(formData.image)) {
+    let imageUrl = formData.image;
+
+    if (file) {
+      setUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        const res = await axios.post(
+          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+          formData
+        );
+        imageUrl = res.data.secure_url;
+      } catch (err) {
+        showAlert('Error al subir la imagen a Cloudinary', 'danger');
+        setUploading(false);
+        setLoading(false);
+        return;
+      }
+      setUploading(false);
+    } else if (!isValidImage(imageUrl)) {
       setError('La URL de la imagen debe ser una URL válida o una ruta local que comience con /');
       setLoading(false);
       return;
@@ -72,6 +105,7 @@ const ProductForm = () => {
     try {
       const productData = {
         ...formData,
+        image: imageUrl,
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock)
       };
@@ -151,7 +185,13 @@ const ProductForm = () => {
         </div>
 
         <div className="mb-3">
-          <label htmlFor="image" className="form-label">URL de la imagen</label>
+          <label htmlFor="image" className="form-label">Imagen del producto</label>
+          <input
+            type="file"
+            className="form-control mb-2"
+            accept="image/*"
+            onChange={handleFileChange}
+          />
           <input
             type="text"
             className="form-control"
@@ -159,8 +199,8 @@ const ProductForm = () => {
             name="image"
             value={formData.image}
             onChange={handleChange}
-            // required
-            placeholder="https://... o /img/mi-imagen.jpg"
+            disabled={!!file}
+            placeholder="URL de la imagen (opcional si subes archivo)"
           />
         </div>
 
@@ -196,9 +236,9 @@ const ProductForm = () => {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={loading}
+            disabled={loading || uploading}
           >
-            {loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear'}
+            {loading ? 'Guardando...' : uploading ? 'Subiendo imagen...' : isEditing ? 'Actualizar' : 'Crear'}
           </button>
           <button
             type="button"
