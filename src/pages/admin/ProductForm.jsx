@@ -159,7 +159,7 @@ const ProductForm = () => {
             name="image"
             value={formData.image}
             onChange={handleChange}
-            required
+            // required
             placeholder="https://... o /img/mi-imagen.jpg"
           />
         </div>
@@ -203,7 +203,7 @@ const ProductForm = () => {
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate('/belpvsrvadm-ey')}
           >
             Cancelar
           </button>
