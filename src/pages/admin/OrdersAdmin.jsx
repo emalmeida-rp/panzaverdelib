@@ -35,6 +35,20 @@ const OrdersAdmin = () => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
+      if (newStatus === 'historico') {
+        const response = await fetchWithAuth(`/orders/${orderId}/move-to-history`, {
+          method: 'POST'
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al mover el pedido a históricos');
+        }
+
+        setOrders(orders.filter(order => order._id !== orderId));
+        showAlert('Pedido movido a históricos correctamente', 'success');
+        return;
+      }
+
       const response = await fetchWithAuth(`/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
@@ -197,7 +211,7 @@ const OrdersAdmin = () => {
               <option key={num} value={num}>{num}</option>
             ))}
           </select>
-          <span className="ms-2">pedidos por página</span>
+          <span className="ms-2">Pedidos por página</span>
         </div>
         <div>
           Página {currentPage} de {totalPages}
@@ -289,11 +303,12 @@ const OrdersAdmin = () => {
                       value={order.status}
                       onChange={(e) => handleStatusChange(order._id, e.target.value)}
                     >
-                      <option value="pendiente">Pendiente</option>
-                      <option value="procesando">Procesando</option>
-                      <option value="enviado">Enviado</option>
-                      <option value="completado">Completado</option>
+                      <option value="pendiente">Pendiente de Pago</option>
+                      <option value="procesando">Pago Confirmado</option>
+                      <option value="enviado">En Preparación</option>
+                      <option value="completado">Entregado</option>
                       <option value="cancelado">Cancelado</option>
+                      <option value="historico">Mover a Históricos</option>
                     </select>
                   </td>
                   <td>{new Date(order.createdAt).toLocaleDateString()}</td>

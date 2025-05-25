@@ -5,7 +5,6 @@ import Home from './pages/Home';
 import History from './pages/History';
 import Gallery from './pages/Gallery';
 import Contact from './pages/Contact';
-// import Cart from './pages/Cart'; // Eliminado porque ya no existe
 import Login from './pages/admin/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import ItemListContainer from './components/ItemListContainer';

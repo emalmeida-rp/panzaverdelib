@@ -8,6 +8,7 @@ import OrdersAdmin from './OrdersAdmin';
 import Modal from 'react-bootstrap/Modal';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import { useCart } from '../../context/CartContext';
 dayjs.extend(utc);
 
 const AdminDashboard = () => {
@@ -24,6 +25,24 @@ const AdminDashboard = () => {
   const [notifOrders, setNotifOrders] = useState([]);
   const [completedOrders, setCompletedOrders] = useState([]);
   const [loadingCompleted, setLoadingCompleted] = useState(true);
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [searchHistoryTerm, setSearchHistoryTerm] = useState('');
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [editingOrder, setEditingOrder] = useState(null);
+  const [historyFormData, setHistoryFormData] = useState({
+    userName: '',
+    userEmail: '',
+    userPhone: '',
+    userAddress: '',
+    items: [],
+    total: 0
+  });
+  const { cart, getTotal } = useCart();
+  const [showCartItems, setShowCartItems] = useState(false);
+  const [searchProductTerm, setSearchProductTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [productQuantity, setProductQuantity] = useState(1);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -67,10 +86,10 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (activeTab === 'historico') {
       setLoadingCompleted(true);
-      fetchWithAuth('/orders')
+      fetchWithAuth('/orders/history')
         .then(res => res.ok ? res.json() : [])
         .then(data => {
-          setCompletedOrders(data.filter(o => o.status === 'completado'));
+          setCompletedOrders(data);
         })
         .finally(() => setLoadingCompleted(false));
     }
@@ -172,6 +191,158 @@ const AdminDashboard = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  const handleCreateHistoryOrder = async () => {
+    try {
+      const itemsToSend = historyFormData.items.map(item => ({
+        product: item.product._id || item.product,
+        quantity: item.quantity,
+        price: item.price
+      }));
+      const response = await fetchWithAuth('/orders/history', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ...historyFormData, items: itemsToSend })
+      });
+      if (!response.ok) {
+        throw new Error('Error al crear el pedido histórico');
+      }
+      const newOrder = await response.json();
+      setCompletedOrders([...completedOrders, newOrder]);
+      setShowHistoryModal(false);
+      setHistoryFormData({
+        userName: '',
+        userEmail: '',
+        userPhone: '',
+        userAddress: '',
+        items: [],
+        total: 0
+      });
+      showAlert('Pedido histórico creado correctamente', 'success');
+    } catch (err) {
+      console.error('Error:', err);
+      showAlert('Error al crear el pedido histórico', 'error');
+    }
+  };
+
+  const handleUpdateHistoryOrder = async () => {
+    try {
+      const itemsToSend = historyFormData.items.map(item => ({
+        product: item.product._id || item.product,
+        quantity: item.quantity,
+        price: item.price
+      }));
+      const response = await fetchWithAuth(`/orders/history/${editingOrder._id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ...historyFormData, items: itemsToSend })
+      });
+      if (!response.ok) {
+        throw new Error('Error al actualizar el pedido histórico');
+      }
+      const updatedOrder = await response.json();
+      setCompletedOrders(completedOrders.map(order => 
+        order._id === editingOrder._id ? updatedOrder : order
+      ));
+      setShowHistoryModal(false);
+      setEditingOrder(null);
+      showAlert('Pedido histórico actualizado correctamente', 'success');
+    } catch (err) {
+      console.error('Error:', err);
+      showAlert('Error al actualizar el pedido histórico', 'error');
+    }
+  };
+
+  const handleDeleteHistoryOrder = async (orderId) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará el pedido histórico de forma permanente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const response = await fetchWithAuth(`/orders/history/${orderId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar el pedido histórico');
+      }
+
+      setCompletedOrders(completedOrders.filter(order => order._id !== orderId));
+      showAlert('Pedido histórico eliminado correctamente', 'success');
+    } catch (err) {
+      console.error('Error:', err);
+      showAlert('Error al eliminar el pedido histórico', 'error');
+    }
+  };
+
+  const filteredHistoryOrders = completedOrders.filter(order => 
+    order.code.toLowerCase().includes(searchHistoryTerm.toLowerCase()) ||
+    order.userName.toLowerCase().includes(searchHistoryTerm.toLowerCase()) ||
+    order.userEmail.toLowerCase().includes(searchHistoryTerm.toLowerCase())
+  );
+
+  const handleAddCartItems = () => {
+    const cartItems = cart.map(item => ({
+      product: { _id: item._id, name: item.name },
+      quantity: item.quantity,
+      price: item.price
+    }));
+    setHistoryFormData(prev => ({
+      ...prev,
+      items: [...prev.items, ...cartItems],
+      total: prev.total + getTotal()
+    }));
+    setShowCartItems(false);
+    showAlert('Productos del carrito agregados correctamente', 'success');
+  };
+
+  const handleSearchProducts = async (term) => {
+    setSearchProductTerm(term);
+    if (term.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    try {
+      const response = await fetchWithAuth(`/products/search?term=${term}`);
+      if (!response.ok) return;
+      const data = await response.json();
+      setSearchResults(data);
+    } catch (err) {
+      console.error('Error:', err);
+    }
+  };
+
+  const handleAddProduct = () => {
+    if (!selectedProduct || productQuantity < 1) return;
+    const newItem = {
+      product: { _id: selectedProduct._id, name: selectedProduct.name },
+      quantity: productQuantity,
+      price: selectedProduct.price
+    };
+    setHistoryFormData(prev => ({
+      ...prev,
+      items: [...prev.items, newItem],
+      total: prev.total + (selectedProduct.price * productQuantity)
+    }));
+    setSelectedProduct(null);
+    setProductQuantity(1);
+    setSearchProductTerm('');
+    setSearchResults([]);
+  };
 
   if (loading && activeTab === 'productos') return (
     <div className="container mt-4">
@@ -386,7 +557,27 @@ const AdminDashboard = () => {
       {activeTab === 'historico' && (
         <>
           <div className="mb-4">
-            <h3 className="mb-3">KPIs de Pedidos Completados</h3>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h3 className="mb-0">KPIs de Pedidos Completados</h3>
+              <button 
+                className="btn btn-primary"
+                onClick={() => {
+                  setEditingOrder(null);
+                  setHistoryFormData({
+                    userName: '',
+                    userEmail: '',
+                    userPhone: '',
+                    userAddress: '',
+                    items: [],
+                    total: 0
+                  });
+                  setShowHistoryModal(true);
+                }}
+              >
+                <i className="bi bi-plus-circle me-2"></i>
+                Agregar Pedido Histórico
+              </button>
+            </div>
             <div className="row g-3 mb-3">
               <div className="col-md-4">
                 <div className="card card-body text-center bg-light border-success border-2">
@@ -436,6 +627,20 @@ const AdminDashboard = () => {
               Exportar histórico a CSV
             </button>
           </div>
+          <div className="mb-4">
+            <div className="input-group">
+              <span className="input-group-text">
+                <i className="bi bi-search"></i>
+              </span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Buscar pedidos por código, nombre o email..."
+                value={searchHistoryTerm}
+                onChange={(e) => setSearchHistoryTerm(e.target.value)}
+              />
+            </div>
+          </div>
           <div className="table-responsive">
             <table className="table table-striped">
               <thead>
@@ -447,6 +652,7 @@ const AdminDashboard = () => {
                   <th>Total</th>
                   <th>Estado</th>
                   <th>Fecha</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -461,16 +667,85 @@ const AdminDashboard = () => {
                     </tr>
                   ))
                 ) : (
-                  completedOrders.map(order => (
-                    <tr key={order._id}>
-                      <td>{order.code}</td>
-                      <td>{order.userName}</td>
-                      <td>{order.userEmail}</td>
-                      <td>{order.userPhone}</td>
-                      <td>${order.total}</td>
-                      <td><span className="badge bg-success">Completado</span></td>
-                      <td>{dayjs(order.createdAt).format('YYYY-MM-DD')}</td>
-                    </tr>
+                  filteredHistoryOrders.map(order => (
+                    <React.Fragment key={order._id}>
+                      <tr>
+                        <td>
+                          <button
+                            className="btn btn-link p-0"
+                            onClick={() => setExpandedOrderId(expandedOrderId === order._id ? null : order._id)}
+                            aria-expanded={expandedOrderId === order._id}
+                            aria-controls={`order-details-${order._id}`}
+                            title={expandedOrderId === order._id ? 'Ocultar detalle' : 'Ver detalle'}
+                          >
+                            <i className={`bi ${expandedOrderId === order._id ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
+                          </button>
+                          {order.code}
+                        </td>
+                        <td>{order.userName}</td>
+                        <td>{order.userEmail}</td>
+                        <td>{order.userPhone}</td>
+                        <td>${order.total}</td>
+                        <td><span className="badge bg-success">Completado</span></td>
+                        <td>{dayjs(order.createdAt).format('YYYY-MM-DD')}</td>
+                        <td>
+                          <div className="btn-group">
+                            <button
+                              className="btn btn-sm btn-warning"
+                              onClick={() => {
+                                setEditingOrder(order);
+                                setHistoryFormData({
+                                  userName: order.userName,
+                                  userEmail: order.userEmail,
+                                  userPhone: order.userPhone,
+                                  userAddress: order.userAddress,
+                                  items: order.items,
+                                  total: order.total
+                                });
+                                setShowHistoryModal(true);
+                              }}
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDeleteHistoryOrder(order._id)}
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedOrderId === order._id && (
+                        <tr id={`order-details-${order._id}`}>
+                          <td colSpan="7">
+                            <div className="p-3 bg-light border rounded">
+                              <h6 className="mb-2">Detalle de productos</h6>
+                              <table className="table table-sm mb-0">
+                                <thead>
+                                  <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio unitario</th>
+                                    <th>Subtotal</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {order.items.map((item, idx) => (
+                                    <tr key={idx}>
+                                      <td>{item.product?.name || item.product?._id || 'Producto eliminado'}</td>
+                                      <td>{item.quantity}</td>
+                                      <td>${item.price}</td>
+                                      <td>${item.price * item.quantity}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))
                 )}
               </tbody>
@@ -500,6 +775,239 @@ const AdminDashboard = () => {
         </Modal.Body>
         <Modal.Footer>
           <button className="btn btn-secondary" onClick={() => setShowNotif(false)}>Cerrar</button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal para crear/editar pedido histórico */}
+      <Modal show={showHistoryModal} onHide={() => {
+        setShowHistoryModal(false);
+        setEditingOrder(null);
+      }} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {editingOrder ? 'Editar Pedido Histórico' : 'Nuevo Pedido Histórico'}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label">Nombre del Cliente</label>
+              <input
+                type="text"
+                className="form-control"
+                value={historyFormData.userName}
+                onChange={(e) => setHistoryFormData({...historyFormData, userName: e.target.value})}
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                className="form-control"
+                value={historyFormData.userEmail}
+                onChange={(e) => setHistoryFormData({...historyFormData, userEmail: e.target.value})}
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Teléfono</label>
+              <input
+                type="tel"
+                className="form-control"
+                value={historyFormData.userPhone}
+                onChange={(e) => setHistoryFormData({...historyFormData, userPhone: e.target.value})}
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Dirección</label>
+              <input
+                type="text"
+                className="form-control"
+                value={historyFormData.userAddress}
+                onChange={(e) => setHistoryFormData({...historyFormData, userAddress: e.target.value})}
+              />
+            </div>
+
+            <div className="col-12">
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <h6 className="mb-0">Productos del pedido</h6>
+                {!editingOrder && cart.length > 0 && (
+                  <button 
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => setShowCartItems(!showCartItems)}
+                  >
+                    <i className="bi bi-cart-plus me-1"></i>
+                    {showCartItems ? 'Ocultar carrito' : 'Agregar del carrito'}
+                  </button>
+                )}
+              </div>
+
+              {/* Buscador de productos */}
+              <div className="card mb-3">
+                <div className="card-body">
+                  <h6 className="card-title">Agregar producto</h6>
+                  <div className="row g-2">
+                    <div className="col-md-6">
+                      <div className="input-group">
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="Buscar producto..."
+                          value={searchProductTerm}
+                          onChange={(e) => handleSearchProducts(e.target.value)}
+                        />
+                        <button 
+                          className="btn btn-outline-secondary" 
+                          type="button"
+                          onClick={() => setSearchResults([])}
+                        >
+                          <i className="bi bi-x"></i>
+                        </button>
+                      </div>
+                      {searchResults.length > 0 && (
+                        <div className="list-group mt-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                          {searchResults.map(product => (
+                            <button
+                              key={product._id}
+                              className={`list-group-item list-group-item-action ${selectedProduct?._id === product._id ? 'active' : ''}`}
+                              onClick={() => setSelectedProduct(product)}
+                            >
+                              <div className="d-flex justify-content-between align-items-center">
+                                <span>{product.name}</span>
+                                <span className="badge bg-primary">${product.price}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="col-md-3">
+                      <div className="input-group">
+                        <span className="input-group-text">Cantidad</span>
+                        <input
+                          type="number"
+                          className="form-control"
+                          min="1"
+                          value={productQuantity}
+                          onChange={(e) => setProductQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-3">
+                      <button
+                        className="btn btn-primary w-100"
+                        onClick={handleAddProduct}
+                        disabled={!selectedProduct}
+                      >
+                        <i className="bi bi-plus-circle me-1"></i>
+                        Agregar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {showCartItems && (
+                <div className="card mb-3">
+                  <div className="card-body">
+                    <h6 className="card-title">Productos en el carrito</h6>
+                    <div className="table-responsive">
+                      <table className="table table-sm">
+                        <thead>
+                          <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio</th>
+                            <th>Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {cart.map(item => (
+                            <tr key={item._id}>
+                              <td>{item.name}</td>
+                              <td>{item.quantity}</td>
+                              <td>${item.price}</td>
+                              <td>${item.price * item.quantity}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr>
+                            <td colSpan="3" className="text-end"><strong>Total:</strong></td>
+                            <td><strong>${getTotal()}</strong></td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                    <button 
+                      className="btn btn-primary btn-sm"
+                      onClick={handleAddCartItems}
+                    >
+                      Agregar al pedido
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Tabla de productos del pedido */}
+              <div className="table-responsive">
+                <table className="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Cantidad</th>
+                      <th>Precio</th>
+                      <th>Subtotal</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historyFormData.items.map((item, index) => (
+                      <tr key={index}>
+                        <td>{item.product?.name || item.product?._id || 'Producto eliminado'}</td>
+                        <td>{item.quantity}</td>
+                        <td>${item.price}</td>
+                        <td>${item.price * item.quantity}</td>
+                        <td>
+                          <button 
+                            className="btn btn-sm btn-danger"
+                            onClick={() => {
+                              const newItems = [...historyFormData.items];
+                              newItems.splice(index, 1);
+                              setHistoryFormData({
+                                ...historyFormData,
+                                items: newItems,
+                                total: newItems.reduce((acc, item) => acc + (item.price * item.quantity), 0)
+                              });
+                            }}
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan="3" className="text-end"><strong>Total:</strong></td>
+                      <td colSpan="2"><strong>${historyFormData.total}</strong></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <button className="btn btn-secondary" onClick={() => setShowHistoryModal(false)}>
+            Cancelar
+          </button>
+          <button 
+            className="btn btn-primary"
+            onClick={editingOrder ? handleUpdateHistoryOrder : handleCreateHistoryOrder}
+            disabled={historyFormData.items.length === 0}
+          >
+            {editingOrder ? 'Actualizar' : 'Crear'}
+          </button>
         </Modal.Footer>
       </Modal>
     </div>

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { useCart } from '../context/CartContext';
 import { fetchWithAuth } from '../utils/api';
+import ProductDetailModal from './ProductDetailModal';
+import './ItemListContainer.css';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -12,7 +15,13 @@ const ItemListContainer = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showNoResults, setShowNoResults] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { addToCart } = useCart();
+
+  // Obtener el ID del producto de la URL
+  const productId = searchParams.get('product');
 
   useEffect(() => {
     AOS.init({ duration: 1000, once: true });
@@ -24,6 +33,14 @@ const ItemListContainer = () => {
         const response = await fetchWithAuth('/products');
         const data = await response.json();
         setProducts(data);
+        
+        // Si hay un ID en la URL, buscar y mostrar ese producto
+        if (productId) {
+          const product = data.find(p => p._id === productId);
+          if (product) {
+            setSelectedProduct(product);
+          }
+        }
       } catch (err) {
         console.error('Error:', err);
         setError(err.message);
@@ -33,7 +50,7 @@ const ItemListContainer = () => {
     };
 
     fetchProducts();
-  }, []);
+  }, [productId]);
 
   const filteredProducts = products.filter(product => 
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -47,6 +64,16 @@ const ItemListContainer = () => {
       setShowNoResults(false);
     }
   }, [searchTerm, filteredProducts]);
+
+  const handleAddToCart = (product) => {
+    setSelectedProduct(product);
+    setSearchParams({ product: product._id });
+  };
+
+  const handleCloseModal = () => {
+    setSelectedProduct(null);
+    setSearchParams({});
+  };
 
   if (loading) return (
     <div className="container mt-4">
@@ -69,6 +96,7 @@ const ItemListContainer = () => {
       </div>
     </div>
   );
+
   if (error) return <div className="container mt-4 alert alert-danger">{error}</div>;
 
   return (
@@ -118,11 +146,10 @@ const ItemListContainer = () => {
                   <h3 className="h5 mb-0">{product.name}</h3>
                 </div>
                 <div className="card-body text-center">
-                  <h4 className="card-text price">${product.price}</h4>
-                  <p className="card-text description">{product.description}</p>
+                  <h4 className="card-text price mb-3">${product.price}</h4>
                   <button 
                     className={`btn w-100 ${product.isAvailable && product.stock > 0 ? 'btn-secondary' : 'btn-danger'}`}
-                    onClick={() => addToCart(product)}
+                    onClick={() => handleAddToCart(product)}
                     disabled={!product.isAvailable || product.stock <= 0}
                   >
                     {product.isAvailable && product.stock > 0 ? 'Agregar al carrito' : 'No disponible'}
@@ -133,70 +160,12 @@ const ItemListContainer = () => {
           ))}
         </div>
       </div>
-      <style jsx>{`
-        .search-container {
-          max-width: 600px;
-          margin: 0 auto;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          border-radius: 8px;
-          overflow: hidden;
-        }
-        .search-input {
-          border: none;
-          padding: 12px;
-          font-size: 1.1rem;
-        }
-        .search-input:focus {
-          box-shadow: none;
-          border-color: #ced4da;
-        }
-        .search-icon {
-          background-color: white;
-          border: none;
-          padding: 12px 15px;
-        }
-        .clear-search {
-          border: none;
-          padding: 12px 15px;
-          background-color: white;
-        }
-        .product-card {
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-          border: none;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .product-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        .product-image-container {
-          height: 200px;
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-color: #f8f9fa;
-        }
-        .product-image-container img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.3s ease;
-        }
-        .product-card:hover .product-image-container img {
-          transform: scale(1.05);
-        }
-        .price {
-          color: #28a745;
-          font-weight: bold;
-          font-size: 1.25rem;
-        }
-        .description {
-          color: #6c757d;
-          font-size: 0.9rem;
-          min-height: 40px;
-        }
-      `}</style>
+
+      <ProductDetailModal 
+        show={!!selectedProduct}
+        onHide={handleCloseModal}
+        product={selectedProduct}
+      />
     </div>
   );
 };

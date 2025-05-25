@@ -11,7 +11,7 @@ const Navbar = () => {
   const handleNavCollapse = () => setIsNavCollapsed(!isNavCollapsed);
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-success w-100">
+    <nav className="navbar z-index-100 navbar-expand-lg navbar-light bg-success w-100 position-sticky top-0">
       <div className="container-fluid px-4 justify-content-between">
         <Link to="/" className="navbar-logo" style={{ color: 'white', textDecoration: 'none', fontSize: '1.5rem' }}>
           Libreria Panza Verde

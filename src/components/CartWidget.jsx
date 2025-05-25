@@ -150,11 +150,14 @@ const CartWidget = () => {
                    <h4>Resumen:</h4>
                    <ul style="text-align:left;">${orderData.items.map(item => `<li>${item.quantity} x ${cart.find(p => p._id === item.product)?.name || 'Producto'}</li>`).join('')}</ul>
                    <p><b>Total: $${orderData.total}</b></p>
+                   <p style='font-size: 0.95em; text-align: center;'>
+                     ALIAS MP: Panzaverde.lib
+                     </p>
                    <div class="swal-qr-row" style='display: flex; align-items: center; gap: 16px; margin-top: 24px;'>
                      <img src='https://placehold.co/160x160?text=QR' alt='QR de pago' style='width: 160px; height: 160px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);'>
                      <div style='font-size: 0.95em; text-align: left;'>
-                       Te dejamos el código QR para que puedas adelantar el pago, o bien aguardar a que te contactemos y coordinar el pedido.<br>
-                       <strong>¡Muchas gracias por tu confianza!</strong>
+                       Te compartimos el código QR y/o alias de Mercado por si preferis adelantar el pago, o aguarda a que te contactemos para coordinar y completar tu pedido. .<br>
+                       <strong>¡Muchas gracias por tu confianza! Visita el carrito para conocer el estado de tu pedido.</strong>
                      </div>
                    </div>
                    <style>
@@ -191,17 +194,17 @@ const CartWidget = () => {
   const getOrderStatusVisual = (status) => {
     switch (status) {
       case 'pendiente':
-        return { color: 'text-warning', icon: 'bi-clock' };
+        return { color: 'text-warning', icon: 'bi-clock', text: 'Pendiente de Pago' };
       case 'procesando':
-        return { color: 'text-primary', icon: 'bi-gear' };
+        return { color: 'text-info', icon: 'bi-cash-coin', text: 'Pago Confirmado' };
       case 'enviado':
-        return { color: 'text-orange', icon: 'bi-truck' };
+        return { color: 'text-success', icon: 'bi-truck', text: 'En Preparación' };
       case 'completado':
-        return { color: 'text-success', icon: 'bi-check-circle' };
+        return { color: 'text-success', icon: 'bi-check-circle', text: 'Entregado' };
       case 'cancelado':
-        return { color: 'text-danger', icon: 'bi-x-circle' };
+        return { color: 'text-danger', icon: 'bi-x-circle', text: 'Cancelado' };
       default:
-        return { color: 'text-secondary', icon: 'bi-question-circle' };
+        return { color: 'text-secondary', icon: 'bi-question-circle', text: 'Desconocido' };
     }
   };
 
@@ -251,7 +254,7 @@ const CartWidget = () => {
                         ></i>
                         <span className={`fw-bold text-capitalize ${visual.color}`}
                               style={{ textShadow: '0 0 2px #000, 0 1px 2px #000' }}>
-                          {order.status}
+                          {visual.text}
                         </span>
                       </li>
                     );
