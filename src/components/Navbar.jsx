@@ -14,7 +14,7 @@ const Navbar = () => {
   const { data: categories = [], isLoading: catLoading, error: catError } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      const res = await fetch('/api/categories');
+      const res = await fetch(`${API_URL}/categories`);
       if (!res.ok) throw new Error('Error al cargar categorías');
       return res.json();
     },
