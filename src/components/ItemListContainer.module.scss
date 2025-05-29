@@ -1,0 +1,31 @@
+.categoryFilterBar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-around;
+  margin-top: 1rem;
+}
+
+
+.categoryFilterBtn {
+  display: flex;
+  align-items: center !important;
+  background: none;
+  border: 2px solid #388e3c;
+  color: #388e3c;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0.35rem 1.1rem;
+  font-size: 1rem;
+  transition: background 0.18s, color 0.18s, border 0.18s;
+  gap: 0.6em;
+  outline: none;
+  box-shadow: none;
+  &:hover, &.active {
+    background: #388e3c;
+    color: #fff;
+    border-color: #388e3c;
+  }
+} 

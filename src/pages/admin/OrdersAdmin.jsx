@@ -134,13 +134,13 @@ const OrdersAdmin = () => {
             <i className="bi bi-arrow-clockwise me-1"></i>
             Refrescar
           </button>
-          <button 
-            className="btn btn-success"
-            onClick={exportToCSV}
-          >
-            <i className="bi bi-file-earmark-excel me-2"></i>
-            Exportar a CSV
-          </button>
+        <button 
+          className="btn btn-success"
+          onClick={exportToCSV}
+        >
+          <i className="bi bi-file-earmark-excel me-2"></i>
+          Exportar a CSV
+        </button>
         </div>
       </div>
 
@@ -235,13 +235,13 @@ const OrdersAdmin = () => {
             <i className="bi bi-arrow-clockwise me-1"></i>
             Refrescar
           </button>
-          <button 
-            className="btn btn-success"
-            onClick={exportToCSV}
-          >
-            <i className="bi bi-file-earmark-excel me-2"></i>
-            Exportar a CSV
-          </button>
+        <button 
+          className="btn btn-success"
+          onClick={exportToCSV}
+        >
+          <i className="bi bi-file-earmark-excel me-2"></i>
+          Exportar a CSV
+        </button>
         </div>
       </div>
 

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { useCart } from '../context/CartContext';
 import { fetchWithAuth } from '../utils/api';
 import ProductDetailModal from './ProductDetailModal';
 import { useQuery } from '@tanstack/react-query';
+import styles from './ItemListContainer.module.scss';
 
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -21,6 +22,7 @@ const ItemListContainer = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { addToCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState('');
+  const location = useLocation();
 
   // Obtener el ID del producto y la categoría de la URL
   const productId = searchParams.get('product');
@@ -41,11 +43,10 @@ const ItemListContainer = () => {
     AOS.init({ duration: 1000, once: true });
   }, []);
 
+  // Sincronizo selectedCategory con la URL
   useEffect(() => {
-    if (categoryParam) {
-      setSelectedCategory(categoryParam);
-    }
-  }, [categoryParam]);
+    setSelectedCategory(categoryParam || '');
+  }, [categoryParam, location.key]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -175,23 +176,26 @@ const ItemListContainer = () => {
           </div>
           
           {/* Filtros de categoría */}
-          <div className="category-filters mb-3">
-            {catLoading ? (
-              <span className="text-muted">Cargando categorías...</span>
-            ) : catError ? (
-              <span className="text-danger">Error al cargar categorías</span>
-            ) : (
-              categories.map(category => (
-                <button
-                  key={category._id}
-                  className={`btn btn-outline-success me-2 mb-2 ${selectedCategory === category._id ? 'active' : ''}`}
-                  onClick={() => handleCategoryFilter(category._id)}
-                >
-                  {category.icon && <i className={`bi ${category.icon} me-1`}></i>}
-                  {category.name}
-                </button>
-              ))
-            )}
+          <div className={styles.categoryFilterBar}>
+            <button className={`${styles.categoryFilterBtn} ${!selectedCategory ? 'active' : ''}`} onClick={() => setSelectedCategory(null)}>
+              Todos
+            </button>
+            {categories.map(cat => (
+              <button
+                key={cat._id}
+                className={`${styles.categoryFilterBtn} ${selectedCategory === cat._id ? 'active' : ''}`}
+                onClick={() => setSelectedCategory(cat._id)}
+              >
+                {cat.icon ? (
+                  cat.icon.startsWith('bi-') ? (
+                    <i className={`bi ${cat.icon} me-1`}></i>
+                  ) : (
+                    <span className="me-1">{cat.icon}</span>
+                  )
+                ) : null}
+                {cat.name}
+              </button>
+            ))}
           </div>
 
           {showNoResults && (

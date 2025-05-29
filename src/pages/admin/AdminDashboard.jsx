@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { fetchWithAuth } from '../../utils/api';
 import { useAlert } from '../../context/AlertContext';
 import Swal from 'sweetalert2';
@@ -27,7 +27,6 @@ const AdminDashboard = () => {
   });
   const navigate = useNavigate();
   const { showAlert } = useAlert();
-  const [showNotif, setShowNotif] = useState(false);
   const [completedOrders, setCompletedOrders] = useState([]);
   const [loadingCompleted, setLoadingCompleted] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
@@ -503,20 +502,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Cerrar dropdown al hacer clic fuera
-  useEffect(() => {
-    if (!notifDropdownOpen) return;
-    function handleClickOutside(event) {
-      if (notifDropdownRef.current && !notifDropdownRef.current.contains(event.target)) {
-        setNotifDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [notifDropdownOpen]);
-
   const handleMarkAsRead = (id) => {
     const updated = [...new Set([...readNotifIds, id])];
     setReadNotifIds(updated);
@@ -577,13 +562,13 @@ const AdminDashboard = () => {
         <div className="d-flex gap-2">
           <div style={{ position: 'relative', display: 'inline-block' }}>
             <button className={`btn btn-outline-primary position-relative ${styles.dashboardBtn} ${styles.dashboardBtnOutline}`} onClick={() => setNotifDropdownOpen(!notifDropdownOpen)} ref={notifDropdownRef}>
-              <i className="bi bi-bell" style={{ fontSize: 22 }}></i>
+            <i className="bi bi-bell" style={{ fontSize: 22 }}></i>
               {notifOrders.filter(o => !readNotifIds.includes(o._id)).length > 0 && (
-                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                   {notifOrders.filter(o => !readNotifIds.includes(o._id)).length}
-                </span>
-              )}
-            </button>
+              </span>
+            )}
+          </button>
             {notifDropdownOpen && (
               <div className={`${styles.notifDropdownAnchored} ${styles.animateFadeSlide}`} ref={notifDropdownRef}>
                 <div className={styles.notifDropdownArrow}></div>
@@ -679,113 +664,113 @@ const AdminDashboard = () => {
         catLoading || categories.length === 0 ? (
           <div className="text-center my-4">Cargando categorías...</div>
         ) : (
-          <>
-            {/* Selector de cantidad y paginación */}
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <div>
-                <label className="me-2">Mostrar:</label>
-                <select
-                  value={itemsPerPage}
-                  onChange={e => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
+        <>
+          {/* Selector de cantidad y paginación */}
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <label className="me-2">Mostrar:</label>
+              <select
+                value={itemsPerPage}
+                onChange={e => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
                   className={styles.dashboardSelect + ' form-select d-inline-block w-auto'}
-                >
-                  {[5, 10, 20, 50].map(num => (
-                    <option key={num} value={num}>{num}</option>
-                  ))}
-                </select>
-                <span className="ms-2">productos por página</span>
-              </div>
-              <div>
-                Página {currentPage} de {totalPages}
-                <button
-                  className="btn btn-sm btn-secondary ms-2"
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Anterior
-                </button>
-                <button
-                  className="btn btn-sm btn-secondary ms-2"
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Siguiente
-                </button>
-              </div>
+              >
+                {[5, 10, 20, 50].map(num => (
+                  <option key={num} value={num}>{num}</option>
+                ))}
+              </select>
+              <span className="ms-2">productos por página</span>
             </div>
+            <div>
+              Página {currentPage} de {totalPages}
+              <button
+                className="btn btn-sm btn-secondary ms-2"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </button>
+              <button
+                className="btn btn-sm btn-secondary ms-2"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
 
-            <div className="mb-4">
-              <div className="input-group">
-                <span className="input-group-text">
-                  <i className="bi bi-search"></i>
-                </span>
-                <input
-                  type="text"
+          <div className="mb-4">
+            <div className="input-group">
+              <span className="input-group-text">
+                <i className="bi bi-search"></i>
+              </span>
+              <input
+                type="text"
                   className={styles.dashboardInput + ' form-control'}
-                  placeholder="Buscar productos por nombre o descripción..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+                placeholder="Buscar productos por nombre o descripción..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
+          </div>
 
             <div className={styles.tableContainer}>
               <table className={styles.dashboardTable}>
-                <thead>
-                  <tr>
-                    <th>Imagen</th>
-                    <th>Nombre</th>
+              <thead>
+                <tr>
+                  <th>Imagen</th>
+                  <th>Nombre</th>
                     <th>Categoría</th>
-                    <th>Precio</th>
-                    <th>Stock</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
+                  <th>Precio</th>
+                  <th>Stock</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
                   {products.map(product => (
-                    <tr key={product._id}>
-                      <td>
-                        <img 
-                          src={product.image} 
-                          alt={product.name} 
+                  <tr key={product._id}>
+                    <td>
+                      <img 
+                        src={product.image} 
+                        alt={product.name}
                           className={styles.productThumbnail}
-                        />
-                      </td>
-                      <td>{product.name}</td>
+                      />
+                    </td>
+                    <td>{product.name}</td>
                       <td>{getCategoryName(product.category)}</td>
-                      <td>${product.price}</td>
-                      <td>{product.stock}</td>
-                      <td>
+                    <td>${product.price}</td>
+                    <td>{product.stock}</td>
+                    <td>
                         <span className={`${styles.statusBadge} ${product.isAvailable ? styles.statusActive : styles.statusInactive}`}>
-                          {product.isAvailable ? 'Disponible' : 'No disponible'}
-                        </span>
-                      </td>
-                      <td>
+                        {product.isAvailable ? 'Disponible' : 'No disponible'}
+                      </span>
+                    </td>
+                    <td>
                         <div className={styles.actionButtons}>
                           <button
                             onClick={() => handleEditProduct(product)}
                             className={`btn btn-sm ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}
-                          >
-                            Editar
+                      >
+                        Editar
                           </button>
-                          <button
-                            onClick={() => handleDelete(product._id)}
+                      <button 
+                        onClick={() => handleDelete(product._id)}
                             className={`btn btn-sm ${styles.dashboardBtn} ${styles.dashboardBtnDanger}`}
-                          >
-                            Eliminar
-                          </button>
+                      >
+                        Eliminar
+                      </button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
         )
       )}
       {activeTab === 'galeria' && (
@@ -955,7 +940,7 @@ const AdminDashboard = () => {
                             </button>
                           </div>
                         </td>
-                      </tr>
+                    </tr>
                       {expandedOrderId === order._id && (
                         <tr id={`order-details-${order._id}`}>
                           <td colSpan="7">
