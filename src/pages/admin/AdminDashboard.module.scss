@@ -1,0 +1,197 @@
+.dashboardBtn {
+  display: flex !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 1px 4px rgba(60, 120, 60, 0.08) !important;
+  border: none !important;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  outline: none !important;
+  font-size: 1rem !important;
+  text-align: center !important;
+  align-items: center !important;
+  justify-content: center;
+}
+
+.notifDropdownAnchored {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  min-width: 320px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: auto;
+}
+
+
+.notifDropdownArrow {
+  width: 24px;
+  height: 12px;
+  position: absolute;
+  top: -12px;
+  right: 38px; // Ajusta este valor para alinear la flecha con la campana
+  z-index: 2010;
+  overflow: visible;
+
+  &::after {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 12px;
+    background: transparent;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 12px solid #fff;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.10));
+  }
+}
+
+.animateFadeSlide {
+  animation: fadeSlideIn 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dashboardHeader {
+  background: linear-gradient(90deg, #e8f5e9 0%, #f1f8e9 100%);
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(60, 120, 60, 0.08);
+  padding: 2rem 2.5rem 1.5rem 2.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboardTitle {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #388e3c;
+  letter-spacing: -1px;
+  margin-bottom: 0;
+}
+
+.dashboardTabs {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(60, 120, 60, 0.06);
+  padding: 0.5rem 1rem;
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.dashboardTab {
+  border: none;
+  background: none;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #388e3c;
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px 8px 0 0;
+  transition: background 0.2s, color 0.2s;
+  cursor: pointer;
+  &.active, &:hover {
+    background: #e8f5e9;
+    color: #1b5e20;
+  }
+}
+
+.dashboardTable {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(60, 120, 60, 0.07);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.dashboardTable th {
+  background: #e8f5e9;
+  color: #388e3c;
+  font-weight: 600;
+  border: none;
+}
+
+.dashboardTable td {
+  border: none;
+  vertical-align: middle;
+}
+
+.dashboardTable tr {
+  transition: background 0.15s;
+  &:hover {
+    background: #f1f8e9;
+  }
+}
+
+.dashboardBtn {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 1px 4px rgba(60, 120, 60, 0.08) !important;
+  border: none !important;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  outline: none !important;
+  font-size: 1rem !important;
+}
+
+.dashboardBtnPrimary {
+  background: linear-gradient(90deg, #1976d2 0%, #2196f3 100%) !important;
+  color: #fff !important;
+  &:hover, &:focus {
+    background: linear-gradient(90deg, #1565c0 0%, #1976d2 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.18) !important;
+  }
+}
+
+.dashboardBtnDanger {
+  background: linear-gradient(90deg, #d32f2f 0%, #e53935 100%) !important;
+  color: #fff !important;
+  &:hover, &:focus {
+    background: linear-gradient(90deg, #b71c1c 0%, #c62828 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(229, 57, 53, 0.18) !important;
+  }
+}
+
+.dashboardBtnOutline {
+  background: #fff !important;
+  color: #1976d2 !important;
+  border: 2px solid #1976d2 !important;
+  &:hover, &:focus {
+    background: #e3f2fd !important;
+    color: #1565c0 !important;
+    border-color: #1565c0 !important;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.10) !important;
+  }
+}
+
+.dashboardInput, .dashboardSelect {
+  border-radius: 8px;
+  border: 1px solid #c8e6c9;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  transition: border 0.2s, box-shadow 0.2s;
+  &:focus {
+    border-color: #388e3c;
+    box-shadow: 0 0 0 2px #c8e6c9;
+  }
+}
+
+.dashboardCard {
+  background: #f9fbe7;
+  border-radius: 14px;
+  box-shadow: 0 1px 6px rgba(60, 120, 60, 0.06);
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+} 

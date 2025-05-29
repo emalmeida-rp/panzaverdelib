@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAlert } from '../context/AlertContext';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -9,6 +10,7 @@ const OrderForm = () => {
   const { cart, getTotal, clearCart } = useCart();
   const { showAlert } = useAlert();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
     userName: '',
@@ -24,38 +26,45 @@ const OrderForm = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const orderData = {
-        ...formData,
-        items: cart.map(item => ({
-          product: item._id,
-          quantity: item.quantity,
-          price: item.price
-        })),
-        total: getTotal()
-      };
-      console.log('Datos enviados al backend:', orderData);
-      const response = await fetch(`${API_URL}/api/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(orderData)
-      });
+  const createOrder = async (orderData) => {
+    const response = await fetch(`${API_URL}/api/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(orderData)
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Error al crear el pedido');
+    return data;
+  };
 
-      const data = await response.json();
-      if (response.ok) {
-        showAlert('Pedido creado exitosamente', 'success');
-        clearCart();
-        navigate(`/order-confirmation/${data.code}`);
-      } else {
-        showAlert('Error al crear el pedido', 'error');
-      }
-    } catch (error) {
-      showAlert('Error al procesar el pedido', 'error');
+  const mutation = useMutation({
+    mutationFn: createOrder,
+    onSuccess: (data) => {
+      showAlert('Pedido creado exitosamente', 'success');
+      clearCart();
+      queryClient.invalidateQueries(['orders']);
+      queryClient.invalidateQueries(['notifOrders']);
+      navigate(`/order-confirmation/${data.code}`);
+    },
+    onError: () => {
+      showAlert('Error al crear el pedido', 'error');
     }
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const orderData = {
+      ...formData,
+      items: cart.map(item => ({
+        product: item._id,
+        quantity: item.quantity,
+        price: item.price
+      })),
+      total: getTotal()
+    };
+    mutation.mutate(orderData);
   };
 
   return (
@@ -124,6 +133,7 @@ const OrderForm = () => {
           <button
             type="submit"
             className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+            disabled={mutation.isLoading}
           >
             Confirmar Pedido
           </button>

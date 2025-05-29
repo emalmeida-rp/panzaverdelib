@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchWithAuth } from '../../utils/api';
 import { useAlert } from '../../context/AlertContext';
@@ -9,6 +9,8 @@ import Modal from 'react-bootstrap/Modal';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { useCart } from '../../context/CartContext';
+import { useQuery } from '@tanstack/react-query';
+import styles from './AdminDashboard.module.scss';
 dayjs.extend(utc);
 
 const AdminDashboard = () => {
@@ -22,7 +24,6 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { showAlert } = useAlert();
   const [showNotif, setShowNotif] = useState(false);
-  const [notifOrders, setNotifOrders] = useState([]);
   const [completedOrders, setCompletedOrders] = useState([]);
   const [loadingCompleted, setLoadingCompleted] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
@@ -43,6 +44,45 @@ const AdminDashboard = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productQuantity, setProductQuantity] = useState(1);
+  // Categorías
+  const [categories, setCategories] = useState([]);
+  const [catLoading, setCatLoading] = useState(true);
+  const [catError, setCatError] = useState(null);
+  const [newCategory, setNewCategory] = useState({ name: '', icon: '', description: '' });
+  const [editCategoryId, setEditCategoryId] = useState(null);
+  const [editCategory, setEditCategory] = useState({ name: '', icon: '', description: '' });
+  const [migrateFromCategory, setMigrateFromCategory] = useState('');
+  const [migrateToCategory, setMigrateToCategory] = useState('');
+  const [migrating, setMigrating] = useState(false);
+  const notifDropdownRef = useRef(null);
+  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
+  const [readNotifIds, setReadNotifIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('readNotifIds')) || [];
+    } catch {
+      return [];
+    }
+  });
+
+  const { data: notifOrders = [], isLoading: notifLoading, error: notifError, refetch: refetchNotif } = useQuery({
+    queryKey: ['notifOrders'],
+    queryFn: async () => {
+      const res = await fetchWithAuth('/orders');
+      if (!res.ok) throw new Error('Error al cargar pedidos');
+      const data = await res.json();
+      return data.filter(o => o.status === 'pendiente').slice(0, 5);
+    },
+    refetchInterval: 60000 // refresca cada 1 minuto
+  });
+
+  const { data: orders = [], isLoading: ordersLoading, error: ordersError, refetch: refetchOrders } = useQuery({
+    queryKey: ['orders'],
+    queryFn: async () => {
+      const response = await fetchWithAuth('/orders');
+      if (!response.ok) throw new Error('Error al cargar los pedidos');
+      return response.json();
+    }
+  });
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -64,24 +104,6 @@ const AdminDashboard = () => {
     fetchProducts();
   }, []);
 
-  // Polling para notificaciones de nuevos pedidos
-  useEffect(() => {
-    let interval;
-    const fetchNotifs = async () => {
-      try {
-        const response = await fetchWithAuth('/orders');
-        if (!response.ok) return;
-        const data = await response.json();
-        // Solo pedidos pendientes, últimos 5
-        const pending = data.filter(o => o.status === 'pendiente').slice(0, 5);
-        setNotifOrders(pending);
-      } catch {}
-    };
-    fetchNotifs();
-    interval = setInterval(fetchNotifs, 300000); // 5 minutos
-    return () => clearInterval(interval);
-  }, []);
-
   // Fetch pedidos completados
   useEffect(() => {
     if (activeTab === 'historico') {
@@ -94,6 +116,25 @@ const AdminDashboard = () => {
         .finally(() => setLoadingCompleted(false));
     }
   }, [activeTab]);
+
+  // Fetch categorías
+  useEffect(() => {
+    // Fetch categorías al montar el componente
+    const fetchCategories = async () => {
+      setCatLoading(true);
+      try {
+        const res = await fetchWithAuth('/categories');
+        if (!res.ok) throw new Error('Error al cargar categorías');
+        const data = await res.json();
+        setCategories(data);
+      } catch (err) {
+        setCatError(err.toString());
+      } finally {
+        setCatLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // KPIs
   const now = dayjs();
@@ -132,7 +173,7 @@ const AdminDashboard = () => {
       ));
       showAlert('Estado actualizado correctamente', 'success');
       // Refrescar ambos listados
-      refreshOrders();
+      refetchOrders();
     } catch (err) {
       console.error('Error:', err);
       showAlert('Error al actualizar el estado', 'error');
@@ -344,6 +385,139 @@ const AdminDashboard = () => {
     setSearchResults([]);
   };
 
+  // Crear categoría
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategory.name.trim()) return;
+    try {
+      const res = await fetchWithAuth('/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCategory)
+      });
+      if (!res.ok) throw new Error('Error al crear categoría');
+      const cat = await res.json();
+      setCategories([...categories, cat]);
+      setNewCategory({ name: '', icon: '', description: '' });
+    } catch (err) {
+      setCatError(err.message);
+    }
+  };
+
+  // Editar categoría
+  const handleEditCategory = (cat) => {
+    setEditCategoryId(cat._id);
+    setEditCategory({ name: cat.name, icon: cat.icon, description: cat.description });
+  };
+  const handleUpdateCategory = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetchWithAuth(`/categories/${editCategoryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editCategory)
+      });
+      if (!res.ok) throw new Error('Error al actualizar categoría');
+      const updated = await res.json();
+      setCategories(categories.map(cat => cat._id === editCategoryId ? updated : cat));
+      setEditCategoryId(null);
+      setEditCategory({ name: '', icon: '', description: '' });
+    } catch (err) {
+      setCatError(err.message);
+    }
+  };
+
+  // Eliminar categoría
+  const handleDeleteCategory = async (id) => {
+    if (!window.confirm('¿Eliminar esta categoría?')) return;
+    try {
+      const res = await fetchWithAuth(`/categories/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error al eliminar categoría');
+      setCategories(categories.filter(cat => cat._id !== id));
+    } catch (err) {
+      setCatError(err.message);
+    }
+  };
+
+  // Helper para mostrar el nombre de la categoría
+  const getCategoryName = (catId) => {
+    if (!catId) return 'Sin categoría';
+    const found = categories.find(c => c._id?.toString() === catId?.toString());
+    return found ? found.name : catId;
+  };
+
+  // Migrar productos masivamente
+  const handleMigrateProducts = async (e) => {
+    e.preventDefault();
+    if (!migrateFromCategory || !migrateToCategory) {
+      showAlert('Selecciona las categorías de origen y destino', 'warning');
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción moverá todos los productos de la categoría seleccionada a la nueva categoría.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, migrar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (!result.isConfirmed) return;
+
+    setMigrating(true);
+    try {
+      const response = await fetchWithAuth('/products/migrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromCategory: migrateFromCategory,
+          toCategory: migrateToCategory
+        })
+      });
+
+      if (!response.ok) throw new Error('Error al migrar los productos');
+      
+      const data = await response.json();
+      showAlert(`Migración completada. ${data.modifiedCount} productos actualizados.`, 'success');
+      
+      // Refrescar la lista de productos
+      const productsResponse = await fetchWithAuth('/products');
+      if (productsResponse.ok) {
+        const updatedProducts = await productsResponse.json();
+        setProducts(updatedProducts);
+      }
+    } catch (err) {
+      showAlert('Error al migrar los productos', 'error');
+    } finally {
+      setMigrating(false);
+      setMigrateFromCategory('');
+      setMigrateToCategory('');
+    }
+  };
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    if (!notifDropdownOpen) return;
+    function handleClickOutside(event) {
+      if (notifDropdownRef.current && !notifDropdownRef.current.contains(event.target)) {
+        setNotifDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [notifDropdownOpen]);
+
+  const handleMarkAsRead = (id) => {
+    const updated = [...new Set([...readNotifIds, id])];
+    setReadNotifIds(updated);
+    localStorage.setItem('readNotifIds', JSON.stringify(updated));
+  };
+
   if (loading && activeTab === 'productos') return (
     <div className="container mt-4">
       <div className="table-responsive">
@@ -379,22 +553,53 @@ const AdminDashboard = () => {
 
   return (
     <div className="container mt-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>Panel de Administración</h1>
+      <div className={styles.dashboardHeader}>
+        <h1 className={styles.dashboardTitle}>Panel de Administración</h1>
         <div className="d-flex gap-2">
-          <button className="btn btn-outline-primary position-relative" onClick={() => setShowNotif(true)}>
-            <i className="bi bi-bell" style={{ fontSize: 22 }}></i>
-            {notifOrders.length > 0 && (
-              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                {notifOrders.length}
-              </span>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <button className={`btn btn-outline-primary position-relative ${styles.dashboardBtn} ${styles.dashboardBtnOutline}`} onClick={() => setNotifDropdownOpen(!notifDropdownOpen)} ref={notifDropdownRef}>
+              <i className="bi bi-bell" style={{ fontSize: 22 }}></i>
+              {notifOrders.filter(o => !readNotifIds.includes(o._id)).length > 0 && (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  {notifOrders.filter(o => !readNotifIds.includes(o._id)).length}
+                </span>
+              )}
+            </button>
+            {notifDropdownOpen && (
+              <div className={`${styles.notifDropdownAnchored} ${styles.animateFadeSlide}`} ref={notifDropdownRef}>
+                <div className={styles.notifDropdownArrow}></div>
+                <div className="dropdown-menu show p-3 shadow border-0">
+                  <h6 className="dropdown-header">Notificaciones de nuevos pedidos</h6>
+                  {notifLoading ? (
+                    <div className="text-center text-muted">Cargando notificaciones...</div>
+                  ) : notifOrders.length === 0 ? (
+                    <div className="text-center text-muted">No hay pedidos nuevos pendientes.</div>
+                  ) : (
+                    <ul className="list-group mb-2">
+                      {notifOrders.map(order => (
+                        <li key={order._id} className={`list-group-item d-flex justify-content-between align-items-center ${readNotifIds.includes(order._id) ? 'bg-light text-muted' : ''}`}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => handleMarkAsRead(order._id)}
+                        >
+                          <span className="fw-bold">{order.code}</span>
+                          <span className="badge bg-warning text-dark">Pendiente</span>
+                          {readNotifIds.includes(order._id) && <i className="bi bi-check2-circle ms-2 text-success"></i>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <button className="btn btn-outline-secondary w-100" onClick={() => refetchNotif()}>
+                    <i className="bi bi-arrow-clockwise me-1"></i> Refrescar
+                  </button>
+                </div>
+              </div>
             )}
-          </button>
-          <Link to="/admin/products/new" className="btn btn-primary">
+          </div>
+          <Link to="/admin/products/new" className={`btn btn-primary ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}>
             Agregar Producto
           </Link>
           <button 
-            className="btn btn-danger"
+            className={`btn btn-danger ${styles.dashboardBtn} ${styles.dashboardBtnDanger}`}
             onClick={handleLogout}
           >
             <i className="bi bi-box-arrow-right me-2"></i>
@@ -404,10 +609,10 @@ const AdminDashboard = () => {
       </div>
 
       {/* Pestañas de navegación */}
-      <ul className="nav nav-tabs mb-4">
+      <ul className={styles.dashboardTabs + ' nav nav-tabs mb-4'}>
         <li className="nav-item">
           <button
-            className={`nav-link${activeTab === 'productos' ? ' active' : ''}`}
+            className={styles.dashboardTab + (activeTab === 'productos' ? ' active' : '') + ' ' + styles.dashboardBtn}
             onClick={() => setActiveTab('productos')}
           >
             Productos
@@ -415,7 +620,7 @@ const AdminDashboard = () => {
         </li>
         <li className="nav-item">
           <button
-            className={`nav-link${activeTab === 'galeria' ? ' active' : ''}`}
+            className={styles.dashboardTab + (activeTab === 'galeria' ? ' active' : '') + ' ' + styles.dashboardBtn}
             onClick={() => setActiveTab('galeria')}
           >
             Galería
@@ -423,7 +628,7 @@ const AdminDashboard = () => {
         </li>
         <li className="nav-item">
           <button
-            className={`nav-link${activeTab === 'pedidos' ? ' active' : ''}`}
+            className={styles.dashboardTab + (activeTab === 'pedidos' ? ' active' : '') + ' ' + styles.dashboardBtn}
             onClick={() => setActiveTab('pedidos')}
           >
             Pedidos
@@ -431,122 +636,136 @@ const AdminDashboard = () => {
         </li>
         <li className="nav-item">
           <button
-            className={`nav-link${activeTab === 'historico' ? ' active' : ''}`}
+            className={styles.dashboardTab + (activeTab === 'historico' ? ' active' : '') + ' ' + styles.dashboardBtn}
             onClick={() => setActiveTab('historico')}
           >
             Histórico
+          </button>
+        </li>
+        <li className="nav-item">
+          <button
+            className={styles.dashboardTab + (activeTab === 'categorias' ? ' active' : '') + ' ' + styles.dashboardBtn}
+            onClick={() => setActiveTab('categorias')}
+          >
+            Categorías
           </button>
         </li>
       </ul>
 
       {/* Contenido de la pestaña activa */}
       {activeTab === 'productos' && (
-        <>
-          {/* Selector de cantidad y paginación */}
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <div>
-              <label className="me-2">Mostrar:</label>
-              <select
-                value={itemsPerPage}
-                onChange={e => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="form-select d-inline-block w-auto"
-              >
-                {[5, 10, 20, 50].map(num => (
-                  <option key={num} value={num}>{num}</option>
-                ))}
-              </select>
-              <span className="ms-2">productos por página</span>
+        catLoading || categories.length === 0 ? (
+          <div className="text-center my-4">Cargando categorías...</div>
+        ) : (
+          <>
+            {/* Selector de cantidad y paginación */}
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <label className="me-2">Mostrar:</label>
+                <select
+                  value={itemsPerPage}
+                  onChange={e => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className={styles.dashboardSelect + ' form-select d-inline-block w-auto'}
+                >
+                  {[5, 10, 20, 50].map(num => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                </select>
+                <span className="ms-2">productos por página</span>
+              </div>
+              <div>
+                Página {currentPage} de {totalPages}
+                <button
+                  className="btn btn-sm btn-secondary ms-2"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </button>
+                <button
+                  className="btn btn-sm btn-secondary ms-2"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                </button>
+              </div>
             </div>
-            <div>
-              Página {currentPage} de {totalPages}
-              <button
-                className="btn btn-sm btn-secondary ms-2"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </button>
-              <button
-                className="btn btn-sm btn-secondary ms-2"
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
 
-          <div className="mb-4">
-            <div className="input-group">
-              <span className="input-group-text">
-                <i className="bi bi-search"></i>
-              </span>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Buscar productos por nombre o descripción..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="mb-4">
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-search"></i>
+                </span>
+                <input
+                  type="text"
+                  className={styles.dashboardInput + ' form-control'}
+                  placeholder="Buscar productos por nombre o descripción..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="table-responsive">
-            <table className="table table-striped">
-              <thead>
-                <tr>
-                  <th>Imagen</th>
-                  <th>Nombre</th>
-                  <th>Descripción</th>
-                  <th>Precio</th>
-                  <th>Stock</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedProducts.map(product => (
-                  <tr key={product._id}>
-                    <td>
-                      <img 
-                        src={product.image} 
-                        alt={product.name}
-                        style={{ width: '50px', height: '50px', objectFit: 'cover' }}
-                        className="rounded"
-                      />
-                    </td>
-                    <td>{product.name}</td>
-                    <td>{product.description.substring(0, 50)}...</td>
-                    <td>${product.price}</td>
-                    <td>{product.stock}</td>
-                    <td>
-                      <span className={`badge ${product.isAvailable ? 'bg-success' : 'bg-danger'}`}>
-                        {product.isAvailable ? 'Disponible' : 'No disponible'}
-                      </span>
-                    </td>
-                    <td>
-                      <Link 
-                        to={`/admin/products/edit/${product._id}`}
-                        className="btn btn-sm btn-warning me-2"
-                      >
-                        Editar
-                      </Link>
-                      <button 
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleDelete(product._id)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
+            <div className="table-responsive">
+              <table className="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Imagen</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+                </thead>
+                <tbody>
+                  {paginatedProducts.map(product => (
+                    <tr key={product._id}>
+                      <td>
+                        <img 
+                          src={product.image} 
+                          alt={product.name}
+                          style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                          className="rounded"
+                        />
+                      </td>
+                      <td>{product.name}</td>
+                      <td>{product.description.substring(0, 50)}...</td>
+                      <td>{getCategoryName(product.category)}</td>
+                      <td>${product.price}</td>
+                      <td>{product.stock}</td>
+                      <td>
+                        <span className={`badge ${product.isAvailable ? 'bg-success' : 'bg-danger'}`}>
+                          {product.isAvailable ? 'Disponible' : 'No disponible'}
+                        </span>
+                      </td>
+                      <td>
+                        <Link 
+                          to={`/admin/products/edit/${product._id}`}
+                          className={`btn btn-sm btn-warning me-2 ${styles.dashboardBtn} ${styles.dashboardBtnOutline}`}
+                        >
+                          Editar
+                        </Link>
+                        <button 
+                          className={`btn btn-sm btn-danger ${styles.dashboardBtn} ${styles.dashboardBtnDanger}`}
+                          onClick={() => handleDelete(product._id)}
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )
       )}
       {activeTab === 'galeria' && (
         <GalleryAdmin />
@@ -682,12 +901,12 @@ const AdminDashboard = () => {
                           </button>
                           {order.code}
                         </td>
-                        <td>{order.userName}</td>
-                        <td>{order.userEmail}</td>
-                        <td>{order.userPhone}</td>
-                        <td>${order.total}</td>
-                        <td><span className="badge bg-success">Completado</span></td>
-                        <td>{dayjs(order.createdAt).format('YYYY-MM-DD')}</td>
+                      <td>{order.userName}</td>
+                      <td>{order.userEmail}</td>
+                      <td>{order.userPhone}</td>
+                      <td>${order.total}</td>
+                      <td><span className="badge bg-success">Completado</span></td>
+                      <td>{dayjs(order.createdAt).format('YYYY-MM-DD')}</td>
                         <td>
                           <div className="btn-group">
                             <button
@@ -741,9 +960,15 @@ const AdminDashboard = () => {
                                   ))}
                                 </tbody>
                               </table>
+                              {order.comments && (
+                                <div className="mt-3">
+                                  <strong>Comentarios del cliente:</strong>
+                                  <div className="alert alert-info mt-1 mb-0">{order.comments}</div>
+                                </div>
+                              )}
                             </div>
                           </td>
-                        </tr>
+                    </tr>
                       )}
                     </React.Fragment>
                   ))
@@ -753,30 +978,129 @@ const AdminDashboard = () => {
           </div>
         </>
       )}
+      {activeTab === 'categorias' && (
+        <div className="mb-5">
+          <h3 className="mb-3">Administrar Categorías</h3>
+          {catError && <div className="alert alert-danger">{catError}</div>}
+          
+          {/* Formulario de migración masiva */}
+          <div className="card mb-4">
+            <div className="card-header">
+              <h5 className="mb-0">Migración Masiva de Productos</h5>
+            </div>
+            <div className="card-body">
+              <form onSubmit={handleMigrateProducts} className="row g-3 align-items-end">
+                <div className="col-md-5">
+                  <label className="form-label">Categoría de origen</label>
+                  <select 
+                    className={styles.dashboardSelect + ' form-select'}
+                    value={migrateFromCategory}
+                    onChange={(e) => setMigrateFromCategory(e.target.value)}
+                    required
+                  >
+                    <option value="">Seleccionar categoría...</option>
+                    {categories.map(cat => (
+                      <option key={cat._id} value={cat._id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-md-5">
+                  <label className="form-label">Categoría de destino</label>
+                  <select 
+                    className={styles.dashboardSelect + ' form-select'}
+                    value={migrateToCategory}
+                    onChange={(e) => setMigrateToCategory(e.target.value)}
+                    required
+                  >
+                    <option value="">Seleccionar categoría...</option>
+                    {categories.map(cat => (
+                      <option key={cat._id} value={cat._id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-md-2">
+                  <button 
+                    type="submit" 
+                    className={`btn btn-primary w-100 ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}
+                    disabled={migrating}
+                  >
+                    {migrating ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Migrando...
+                      </>
+                    ) : 'Migrar'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
 
-      {/* Modal de notificaciones */}
-      <Modal show={showNotif} onHide={() => setShowNotif(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Notificaciones de nuevos pedidos</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {notifOrders.length === 0 ? (
-            <div className="text-center text-muted">No hay pedidos nuevos pendientes.</div>
+          {/* Formulario de creación/edición de categorías */}
+          <form className="row g-2 align-items-end mb-4" onSubmit={editCategoryId ? handleUpdateCategory : handleCreateCategory}>
+            <div className="col-md-3">
+              <label className="form-label">Nombre</label>
+              <input type="text" className={styles.dashboardInput + ' form-control'} required maxLength={32}
+                value={editCategoryId ? editCategory.name : newCategory.name}
+                onChange={e => editCategoryId ? setEditCategory({ ...editCategory, name: e.target.value }) : setNewCategory({ ...newCategory, name: e.target.value })}
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">Ícono (opcional)</label>
+              <input type="text" className={styles.dashboardInput + ' form-control'} maxLength={32}
+                value={editCategoryId ? editCategory.icon : newCategory.icon}
+                onChange={e => editCategoryId ? setEditCategory({ ...editCategory, icon: e.target.value }) : setNewCategory({ ...newCategory, icon: e.target.value })}
+                placeholder="bi-book, bi-pencil..."
+              />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Descripción</label>
+              <input type="text" className={styles.dashboardInput + ' form-control'} maxLength={64}
+                value={editCategoryId ? editCategory.description : newCategory.description}
+                onChange={e => editCategoryId ? setEditCategory({ ...editCategory, description: e.target.value }) : setNewCategory({ ...newCategory, description: e.target.value })}
+              />
+            </div>
+            <div className="col-md-2 d-grid">
+              <button type="submit" className={`btn btn-${editCategoryId ? 'warning' : 'primary'} ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}>{editCategoryId ? 'Actualizar' : 'Crear'}</button>
+              {editCategoryId && (
+                <button type="button" className={`btn btn-secondary mt-2 ${styles.dashboardBtn} ${styles.dashboardBtnOutline}`} onClick={() => { setEditCategoryId(null); setEditCategory({ name: '', icon: '', description: '' }); }}>Cancelar</button>
+              )}
+            </div>
+          </form>
+          {catLoading ? (
+            <div className="text-center my-4">Cargando categorías...</div>
           ) : (
-            <ul className="list-group">
-              {notifOrders.map(order => (
-                <li key={order._id} className="list-group-item d-flex justify-content-between align-items-center">
-                  <span className="fw-bold">{order.code}</span>
-                  <span className="badge bg-warning text-dark">Pendiente</span>
-                </li>
-              ))}
-            </ul>
+            <div className="table-responsive">
+              <table className="table table-bordered align-middle">
+                <thead>
+                  <tr>
+                    <th>Ícono</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.map(cat => (
+                    <tr key={cat._id}>
+                      <td>{cat.icon && <i className={`bi ${cat.icon} me-2`}></i>}</td>
+                      <td>{cat.name}</td>
+                      <td>{cat.description}</td>
+                      <td>
+                        <button className="btn btn-sm btn-warning me-2" onClick={() => handleEditCategory(cat)}>Editar</button>
+                        <button className="btn btn-sm btn-danger" onClick={() => handleDeleteCategory(cat._id)}>Eliminar</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {categories.length === 0 && (
+                    <tr><td colSpan="4" className="text-center">No hay categorías registradas.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
-        </Modal.Body>
-        <Modal.Footer>
-          <button className="btn btn-secondary" onClick={() => setShowNotif(false)}>Cerrar</button>
-        </Modal.Footer>
-      </Modal>
+        </div>
+      )}
 
       {/* Modal para crear/editar pedido histórico */}
       <Modal show={showHistoryModal} onHide={() => {
@@ -794,7 +1118,7 @@ const AdminDashboard = () => {
               <label className="form-label">Nombre del Cliente</label>
               <input
                 type="text"
-                className="form-control"
+                className={styles.dashboardInput + ' form-control'}
                 value={historyFormData.userName}
                 onChange={(e) => setHistoryFormData({...historyFormData, userName: e.target.value})}
               />
@@ -803,7 +1127,7 @@ const AdminDashboard = () => {
               <label className="form-label">Email</label>
               <input
                 type="email"
-                className="form-control"
+                className={styles.dashboardInput + ' form-control'}
                 value={historyFormData.userEmail}
                 onChange={(e) => setHistoryFormData({...historyFormData, userEmail: e.target.value})}
               />
@@ -812,7 +1136,7 @@ const AdminDashboard = () => {
               <label className="form-label">Teléfono</label>
               <input
                 type="tel"
-                className="form-control"
+                className={styles.dashboardInput + ' form-control'}
                 value={historyFormData.userPhone}
                 onChange={(e) => setHistoryFormData({...historyFormData, userPhone: e.target.value})}
               />
@@ -821,7 +1145,7 @@ const AdminDashboard = () => {
               <label className="form-label">Dirección</label>
               <input
                 type="text"
-                className="form-control"
+                className={styles.dashboardInput + ' form-control'}
                 value={historyFormData.userAddress}
                 onChange={(e) => setHistoryFormData({...historyFormData, userAddress: e.target.value})}
               />
@@ -850,7 +1174,7 @@ const AdminDashboard = () => {
                       <div className="input-group">
                         <input
                           type="text"
-                          className="form-control"
+                          className={styles.dashboardInput + ' form-control'}
                           placeholder="Buscar producto..."
                           value={searchProductTerm}
                           onChange={(e) => handleSearchProducts(e.target.value)}
@@ -885,7 +1209,7 @@ const AdminDashboard = () => {
                         <span className="input-group-text">Cantidad</span>
                         <input
                           type="number"
-                          className="form-control"
+                          className={styles.dashboardInput + ' form-control'}
                           min="1"
                           value={productQuantity}
                           onChange={(e) => setProductQuantity(Math.max(1, parseInt(e.target.value) || 1))}

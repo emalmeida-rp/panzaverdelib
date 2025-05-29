@@ -205,4 +205,224 @@ main {
 
 .read-the-docs {
   color: #888;
+}
+
+// --- Botones de compartir modernos para el modal de producto ---
+.share-section {
+  border-top: 1px solid #eee;
+  padding-top: 1.5rem;
+  h5 {
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+}
+
+.share-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.share-btn-custom {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eee;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  padding: 0;
+  cursor: pointer;
+  svg {
+    width: 32px;
+    height: 32px;
+    display: block;
+  }
+}
+
+.share-btn-custom.facebook:hover {
+  background: #1877f3;
+  box-shadow: 0 4px 12px rgba(24,119,243,0.15);
+  transform: scale(1.1);
+}
+.share-btn-custom.twitter:hover {
+  background: #1da1f2;
+  box-shadow: 0 4px 12px rgba(29,161,242,0.15);
+  transform: scale(1.1);
+}
+.share-btn-custom.whatsapp:hover {
+  background: #25d366;
+  box-shadow: 0 4px 12px rgba(37,211,102,0.15);
+  transform: scale(1.1);
+}
+
+// --- Botones de compartir con Bootstrap, ícono circular y label debajo ---
+.share-btn-bs-vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 70px;
+}
+
+.share-btn-bs-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+  transition: box-shadow 0.2s;
+  .share-icon {
+    font-size: 1.6rem;
+    transition: color 0.2s, text-shadow 0.2s;
+    color: inherit;
+  }
+  &:hover .share-icon {
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.18), 0 0 0.5em currentColor;
+  }
+  &:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.16);
+  }
+}
+
+.share-label {
+  font-size: 1rem;
+  color: #333;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .share-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0;
+  }
+  .share-btn-bs-vertical {
+    min-width: unset;
+    width: 100%;
+  }
+  .share-btn-bs-circle {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+    .share-icon {
+      font-size: 1.3rem;
+    }
+  }
+  .share-label {
+    font-size: 0.95rem;
+  }
+}
+
+// --- Estilos migrados de ItemListContainer.css ---
+.search-container {
+  max-width: 600px;
+  margin: 0 auto;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.search-input {
+  border: none;
+  padding: 12px;
+  font-size: 1.1rem;
+  &:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+  }
+}
+
+.search-icon {
+  background-color: white;
+  border: none;
+  padding: 12px 15px;
+}
+
+.clear-search {
+  border: none;
+  padding: 12px 15px;
+  background-color: white;
+}
+
+.product-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    .product-image-container img {
+      transform: scale(1.05);
+    }
+  }
+}
+
+.product-image-container {
+  height: 200px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+}
+
+.price {
+  color: #28a745;
+  font-weight: bold;
+  font-size: 1.25rem;
+}
+
+// Filtros de categoría
+.category-filters {
+  margin: 1rem 0;
+  .btn {
+    transition: all 0.3s ease;
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    i {
+      font-size: 1.1rem;
+    }
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  }
+}
+
+// Dropdown de categorías en el navbar
+.navbar .dropdown-menu {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: none;
+  padding: 0.5rem;
+}
+
+.navbar .dropdown-item {
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
+  i {
+    width: 20px;
+    text-align: center;
+  }
+  &:hover {
+    background-color: #e9ecef;
+    transform: translateX(5px);
+  }
 } 

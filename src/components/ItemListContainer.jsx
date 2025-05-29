@@ -5,7 +5,8 @@ import 'aos/dist/aos.css';
 import { useCart } from '../context/CartContext';
 import { fetchWithAuth } from '../utils/api';
 import ProductDetailModal from './ProductDetailModal';
-import './ItemListContainer.css';
+import { useQuery } from '@tanstack/react-query';
+
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -19,13 +20,32 @@ const ItemListContainer = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { addToCart } = useCart();
+  const [selectedCategory, setSelectedCategory] = useState('');
 
-  // Obtener el ID del producto de la URL
+  // Obtener el ID del producto y la categoría de la URL
   const productId = searchParams.get('product');
+  const categoryParam = searchParams.get('category');
+
+  // React Query para categorías
+  const { data: categories = [], isLoading: catLoading, error: catError } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const res = await fetch('/api/categories');
+      if (!res.ok) throw new Error('Error al cargar categorías');
+      return res.json();
+    },
+    refetchInterval: 300000 // refresca cada 5 minutos
+  });
 
   useEffect(() => {
     AOS.init({ duration: 1000, once: true });
   }, []);
+
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [categoryParam]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -34,7 +54,6 @@ const ItemListContainer = () => {
         const data = await response.json();
         setProducts(data);
         
-        // Si hay un ID en la URL, buscar y mostrar ese producto
         if (productId) {
           const product = data.find(p => p._id === productId);
           if (product) {
@@ -52,10 +71,12 @@ const ItemListContainer = () => {
     fetchProducts();
   }, [productId]);
 
-  const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = !selectedCategory || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   useEffect(() => {
     if (searchTerm && filteredProducts.length === 0) {
@@ -73,6 +94,30 @@ const ItemListContainer = () => {
   const handleCloseModal = () => {
     setSelectedProduct(null);
     setSearchParams({});
+  };
+
+  const handleCategoryFilter = (categoryId) => {
+    setSelectedCategory(categoryId);
+    setSearchParams({ category: categoryId });
+  };
+
+  const handleShare = (product, platform) => {
+    const url = `${window.location.origin}/productos?product=${product._id}`;
+    const text = `¡Mira este producto en Librería Panza Verde: ${product.name}!`;
+    
+    switch (platform) {
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+        break;
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+        break;
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, '_blank');
+        break;
+      default:
+        break;
+    }
   };
 
   if (loading) return (
@@ -128,6 +173,27 @@ const ItemListContainer = () => {
               </button>
             )}
           </div>
+          
+          {/* Filtros de categoría */}
+          <div className="category-filters mb-3">
+            {catLoading ? (
+              <span className="text-muted">Cargando categorías...</span>
+            ) : catError ? (
+              <span className="text-danger">Error al cargar categorías</span>
+            ) : (
+              categories.map(category => (
+                <button
+                  key={category._id}
+                  className={`btn btn-outline-success me-2 mb-2 ${selectedCategory === category._id ? 'active' : ''}`}
+                  onClick={() => handleCategoryFilter(category._id)}
+                >
+                  {category.icon && <i className={`bi ${category.icon} me-1`}></i>}
+                  {category.name}
+                </button>
+              ))
+            )}
+          </div>
+
           {showNoResults && (
             <div className="alert alert-info mt-3 text-center" role="alert" data-aos="fade-up">
               <i className="bi bi-emoji-frown me-2"></i>
@@ -165,6 +231,7 @@ const ItemListContainer = () => {
         show={!!selectedProduct}
         onHide={handleCloseModal}
         product={selectedProduct}
+        onShare={handleShare}
       />
     </div>
   );

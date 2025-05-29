@@ -19,18 +19,21 @@ const ProductForm = () => {
     price: '',
     image: '',
     stock: '',
-    isAvailable: true
+    isAvailable: true,
+    category: 'otros'
   });
 
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     if (isEditing) {
       fetchProduct();
     }
+    fetchCategories();
   }, [id]);
 
   const fetchProduct = async () => {
@@ -45,6 +48,17 @@ const ProductForm = () => {
       });
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetchWithAuth('/categories');
+      if (!res.ok) throw new Error('Error al cargar categorías');
+      const data = await res.json();
+      setCategories(data);
+    } catch (err) {
+      // No mostrar error, solo dejar vacío
     }
   };
 
@@ -216,6 +230,23 @@ const ProductForm = () => {
             required
             min="0"
           />
+        </div>
+
+        <div className="mb-3">
+          <label htmlFor="category" className="form-label">Categoría</label>
+          <select
+            className="form-select"
+            id="category"
+            name="category"
+            value={formData.category || ''}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Seleccionar categoría...</option>
+            {categories.map(cat => (
+              <option key={cat._id} value={cat._id}>{cat.name}</option>
+            ))}
+          </select>
         </div>
 
         <div className="mb-3 form-check">

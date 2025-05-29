@@ -1,37 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { fetchWithAuth } from '../../utils/api';
 import { useAlert } from '../../context/AlertContext';
 import Swal from 'sweetalert2';
+import { useQuery } from '@tanstack/react-query';
 
 const OrdersAdmin = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const { showAlert } = useAlert();
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const fetchOrders = async () => {
-    try {
+  // React Query para pedidos
+  const { data: ordersData = [], isLoading, error: queryError, refetch } = useQuery({
+    queryKey: ['orders'],
+    queryFn: async () => {
+      console.log('[React Query] Fetching pedidos desde OrdersAdmin');
       const response = await fetchWithAuth('/orders');
-      if (!response.ok) {
-        throw new Error('Error al cargar los pedidos');
-      }
-      const data = await response.json();
-      setOrders(data);
-    } catch (err) {
-      console.error('Error:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (!response.ok) throw new Error('Error al cargar los pedidos');
+      return response.json();
+    },
+    refetchInterval: 60000 // refresca cada 1 minuto
+  });
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
@@ -44,8 +34,7 @@ const OrdersAdmin = () => {
           throw new Error('Error al mover el pedido a históricos');
         }
 
-        setOrders(orders.filter(order => order._id !== orderId));
-        showAlert('Pedido movido a históricos correctamente', 'success');
+        refetch();
         return;
       }
 
@@ -61,10 +50,7 @@ const OrdersAdmin = () => {
         throw new Error('Error al actualizar el estado del pedido');
       }
 
-      setOrders(orders.map(order => 
-        order._id === orderId ? { ...order, status: newStatus } : order
-      ));
-      showAlert('Estado actualizado correctamente', 'success');
+      refetch();
     } catch (err) {
       console.error('Error:', err);
       showAlert('Error al actualizar el estado', 'error');
@@ -95,8 +81,7 @@ const OrdersAdmin = () => {
         throw new Error('Error al eliminar el pedido');
       }
 
-      setOrders(orders.filter(order => order._id !== orderId));
-      showAlert('Pedido eliminado correctamente', 'success');
+      refetch();
     } catch (err) {
       console.error('Error:', err);
       showAlert('Error al eliminar el pedido', 'error');
@@ -105,7 +90,7 @@ const OrdersAdmin = () => {
 
   const exportToCSV = () => {
     const headers = ['Código', 'Cliente', 'Email', 'Teléfono', 'Dirección', 'Total', 'Estado', 'Fecha'];
-    const csvData = orders.map(order => [
+    const csvData = ordersData.map(order => [
       order.code,
       order.userName,
       order.userEmail,
@@ -128,7 +113,7 @@ const OrdersAdmin = () => {
     link.click();
   };
 
-  const filteredOrders = orders.filter(order => 
+  const filteredOrders = ordersData.filter(order => 
     order.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.userEmail.toLowerCase().includes(searchTerm.toLowerCase())
@@ -140,17 +125,23 @@ const OrdersAdmin = () => {
     currentPage * itemsPerPage
   );
 
-  if (loading) return (
+  if (isLoading) return (
     <div className="container mt-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Gestión de Pedidos</h1>
-        <button 
-          className="btn btn-success"
-          onClick={exportToCSV}
-        >
-          <i className="bi bi-file-earmark-excel me-2"></i>
-          Exportar a CSV
-        </button>
+        <div className="d-flex gap-2">
+          <button className="btn btn-outline-secondary" onClick={() => refetch()}>
+            <i className="bi bi-arrow-clockwise me-1"></i>
+            Refrescar
+          </button>
+          <button 
+            className="btn btn-success"
+            onClick={exportToCSV}
+          >
+            <i className="bi bi-file-earmark-excel me-2"></i>
+            Exportar a CSV
+          </button>
+        </div>
       </div>
 
       <div className="mb-4">
@@ -233,19 +224,25 @@ const OrdersAdmin = () => {
       </div>
     </div>
   );
-  if (error) return <div className="container mt-4 alert alert-danger">{error}</div>;
+  if (queryError) return <div className="container mt-4 alert alert-danger">{queryError.message}</div>;
 
   return (
     <div className="container mt-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Gestión de Pedidos</h1>
-        <button 
-          className="btn btn-success"
-          onClick={exportToCSV}
-        >
-          <i className="bi bi-file-earmark-excel me-2"></i>
-          Exportar a CSV
-        </button>
+        <div className="d-flex gap-2">
+          <button className="btn btn-outline-secondary" onClick={() => refetch()}>
+            <i className="bi bi-arrow-clockwise me-1"></i>
+            Refrescar
+          </button>
+          <button 
+            className="btn btn-success"
+            onClick={exportToCSV}
+          >
+            <i className="bi bi-file-earmark-excel me-2"></i>
+            Exportar a CSV
+          </button>
+        </div>
       </div>
 
       <div className="mb-4">
@@ -346,6 +343,12 @@ const OrdersAdmin = () => {
                             ))}
                           </tbody>
                         </table>
+                        {order.comments && (
+                          <div className="mt-3">
+                            <strong>Comentarios del cliente:</strong>
+                            <div className="alert alert-info mt-1 mb-0">{order.comments}</div>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>
