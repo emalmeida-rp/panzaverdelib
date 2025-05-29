@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import CartWidget from './CartWidget';
 import { useQuery } from '@tanstack/react-query';
+import { fetchWithAuth } from '../utils/api';
 
 const Navbar = () => {
   const { cart } = useCart();
@@ -14,7 +15,7 @@ const Navbar = () => {
   const { data: categories = [], isLoading: catLoading, error: catError } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/categories`);
+      const res = await fetchWithAuth('/categories');
       if (!res.ok) throw new Error('Error al cargar categorías');
       return res.json();
     },

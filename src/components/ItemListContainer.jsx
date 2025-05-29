@@ -30,7 +30,7 @@ const ItemListContainer = () => {
   const { data: categories = [], isLoading: catLoading, error: catError } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/categories`);
+      const res = await fetchWithAuth('/categories');
       if (!res.ok) throw new Error('Error al cargar categorías');
       return res.json();
     },
