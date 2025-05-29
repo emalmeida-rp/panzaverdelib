@@ -25,6 +25,7 @@
 }
 
 
+
 .notifDropdownArrow {
   width: 24px;
   height: 12px;
@@ -194,4 +195,122 @@
   box-shadow: 0 1px 6px rgba(60, 120, 60, 0.06);
   padding: 1.5rem 2rem;
   margin-bottom: 2rem;
+}
+
+.tableContainer {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.dashboardTable {
+  width: 100%;
+  border-collapse: collapse;
+  
+  th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+
+  th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+  }
+
+  tr:hover {
+    background: #f8f9fa;
+  }
+}
+
+.productThumbnail {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.statusActive {
+  background: #d4edda;
+  color: #155724;
+}
+
+.statusInactive {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dashboardInput {
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 0.5rem;
+  transition: border-color 0.15s ease-in-out;
+
+  &:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+}
+
+.dashboardSelect {
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 0.5rem;
+  transition: border-color 0.15s ease-in-out;
+  background-color: white;
+
+  &:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+}
+
+// Ajuste para el modal de edición de productos
+.modal {
+  z-index: 1020 !important;
+  margin-top: 0 !important;
+}
+
+// El navbar sticky debe estar por encima del modal
+.sticky-top, .navbar-sticky, .navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1055 !important;
+  background: #fff;
+}
+
+// Opcional: el backdrop del modal aún más abajo
+.modal-backdrop {
+  z-index: 1010 !important;
 } 
+
+.modal-content {
+  top: 3rem !important;
+}
+
+.modal-dialog {
+  position: relative;
+  top: 3rem !important;
+}
+
+.custom-modal-dialog {
+  position: relative;
+  top: 3rem !important;
+}

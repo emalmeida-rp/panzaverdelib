@@ -11,6 +11,7 @@ import utc from 'dayjs/plugin/utc';
 import { useCart } from '../../context/CartContext';
 import { useQuery } from '@tanstack/react-query';
 import styles from './AdminDashboard.module.scss';
+import ProductEditModal from './ProductEditModal';
 dayjs.extend(utc);
 
 const AdminDashboard = () => {
@@ -20,7 +21,10 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10); // valor por defecto
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    const saved = localStorage.getItem('adminItemsPerPage');
+    return saved ? Number(saved) : 10;
+  });
   const navigate = useNavigate();
   const { showAlert } = useAlert();
   const [showNotif, setShowNotif] = useState(false);
@@ -63,6 +67,7 @@ const AdminDashboard = () => {
       return [];
     }
   });
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const { data: notifOrders = [], isLoading: notifLoading, error: notifError, refetch: refetchNotif } = useQuery({
     queryKey: ['notifOrders'],
@@ -518,6 +523,20 @@ const AdminDashboard = () => {
     localStorage.setItem('readNotifIds', JSON.stringify(updated));
   };
 
+  // Guardar itemsPerPage en localStorage cuando cambie
+  useEffect(() => {
+    localStorage.setItem('adminItemsPerPage', itemsPerPage.toString());
+  }, [itemsPerPage]);
+
+  const handleEditProduct = (product) => {
+    setSelectedProduct(product);
+    setShowEditModal(true);
+  };
+
+  const handleEditSuccess = (updatedProduct) => {
+    setProducts(products.map(p => p._id === updatedProduct._id ? updatedProduct : p));
+  };
+
   if (loading && activeTab === 'productos') return (
     <div className="container mt-4">
       <div className="table-responsive">
@@ -595,9 +614,12 @@ const AdminDashboard = () => {
               </div>
             )}
           </div>
-          <Link to="/admin/products/new" className={`btn btn-primary ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}>
+          <button 
+            className={`btn btn-primary ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}
+            onClick={() => { setSelectedProduct(null); setShowEditModal(true); }}
+          >
             Agregar Producto
-          </Link>
+          </button>
           <button 
             className={`btn btn-danger ${styles.dashboardBtn} ${styles.dashboardBtnDanger}`}
             onClick={handleLogout}
@@ -710,13 +732,12 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            <div className="table-responsive">
-              <table className="table table-striped">
+            <div className={styles.tableContainer}>
+              <table className={styles.dashboardTable}>
                 <thead>
                   <tr>
                     <th>Imagen</th>
                     <th>Nombre</th>
-                    <th>Descripción</th>
                     <th>Categoría</th>
                     <th>Precio</th>
                     <th>Stock</th>
@@ -725,39 +746,39 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedProducts.map(product => (
+                  {products.map(product => (
                     <tr key={product._id}>
                       <td>
                         <img 
                           src={product.image} 
-                          alt={product.name}
-                          style={{ width: '50px', height: '50px', objectFit: 'cover' }}
-                          className="rounded"
+                          alt={product.name} 
+                          className={styles.productThumbnail}
                         />
                       </td>
                       <td>{product.name}</td>
-                      <td>{product.description.substring(0, 50)}...</td>
                       <td>{getCategoryName(product.category)}</td>
                       <td>${product.price}</td>
                       <td>{product.stock}</td>
                       <td>
-                        <span className={`badge ${product.isAvailable ? 'bg-success' : 'bg-danger'}`}>
+                        <span className={`${styles.statusBadge} ${product.isAvailable ? styles.statusActive : styles.statusInactive}`}>
                           {product.isAvailable ? 'Disponible' : 'No disponible'}
                         </span>
                       </td>
                       <td>
-                        <Link 
-                          to={`/admin/products/edit/${product._id}`}
-                          className={`btn btn-sm btn-warning me-2 ${styles.dashboardBtn} ${styles.dashboardBtnOutline}`}
-                        >
-                          Editar
-                        </Link>
-                        <button 
-                          className={`btn btn-sm btn-danger ${styles.dashboardBtn} ${styles.dashboardBtnDanger}`}
-                          onClick={() => handleDelete(product._id)}
-                        >
-                          Eliminar
-                        </button>
+                        <div className={styles.actionButtons}>
+                          <button
+                            onClick={() => handleEditProduct(product)}
+                            className={`btn btn-sm ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product._id)}
+                            className={`btn btn-sm ${styles.dashboardBtn} ${styles.dashboardBtnDanger}`}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1103,10 +1124,10 @@ const AdminDashboard = () => {
       )}
 
       {/* Modal para crear/editar pedido histórico */}
-      <Modal show={showHistoryModal} onHide={() => {
+      <Modal style={{ top: '3rem' }} show={showHistoryModal} onHide={() => {
         setShowHistoryModal(false);
         setEditingOrder(null);
-      }} size="lg">
+      }} size="lg" dialogClassName="custom-modal-dialog">
         <Modal.Header closeButton>
           <Modal.Title>
             {editingOrder ? 'Editar Pedido Histórico' : 'Nuevo Pedido Histórico'}
@@ -1334,6 +1355,13 @@ const AdminDashboard = () => {
           </button>
         </Modal.Footer>
       </Modal>
+
+      <ProductEditModal
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+        product={selectedProduct}
+        onSuccess={handleEditSuccess}
+      />
     </div>
   );
 };
