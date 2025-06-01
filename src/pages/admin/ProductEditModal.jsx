@@ -112,8 +112,11 @@ const ProductEditModal = ({ show, onHide, product, onSuccess }) => {
         setLoading(false);
         return;
       }
-      const response = await fetchWithAuth(`/products/${product._id}`, {
-        method: 'PUT',
+      const isEditing = !!(product && product._id);
+      const endpoint = isEditing ? `/products/${product._id}` : '/products';
+      const method = isEditing ? 'PUT' : 'POST';
+      const response = await fetchWithAuth(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
@@ -121,9 +124,9 @@ const ProductEditModal = ({ show, onHide, product, onSuccess }) => {
           stock: Number(formData.stock)
         })
       });
-      if (!response.ok) throw new Error('Error al actualizar el producto');
+      if (!response.ok) throw new Error(isEditing ? 'Error al actualizar el producto' : 'Error al crear el producto');
       const updatedProduct = await response.json();
-      showAlert('Producto actualizado correctamente', 'success');
+      showAlert(isEditing ? 'Producto actualizado correctamente' : 'Producto creado correctamente', 'success');
       onSuccess(updatedProduct);
       onHide();
     } catch (err) {
@@ -136,7 +139,7 @@ const ProductEditModal = ({ show, onHide, product, onSuccess }) => {
   return (
     <Modal style={{ top: '3rem' }} show={show} onHide={onHide} size="lg" dialogClassName="custom-modal-dialog">
       <Modal.Header closeButton>
-        <Modal.Title>Editar Producto</Modal.Title>
+        <Modal.Title>{product ? 'Editar Producto' : 'Nuevo Producto'}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <form onSubmit={handleSubmit}>
@@ -256,7 +259,7 @@ const ProductEditModal = ({ show, onHide, product, onSuccess }) => {
               className={`btn btn-primary ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}
               disabled={loading}
             >
-              {loading ? 'Guardando...' : 'Guardar cambios'}
+              {loading ? 'Guardando...' : product ? 'Guardar cambios' : 'Crear producto'}
             </button>
           </div>
         </form>

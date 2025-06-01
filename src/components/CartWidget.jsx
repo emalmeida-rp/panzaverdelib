@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext';
-import { useNavigate } from 'react-router-dom';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './CartWidget.css';
 import Swal from 'sweetalert2';
@@ -13,9 +12,7 @@ const CartWidget = () => {
   const { cart, removeFromCart, updateQuantity, getTotal, clearCart } = useCart();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [orderStatus, setOrderStatus] = useState(null);
   const dropdownRef = useRef(null);
-  const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
   const [orderComments, setOrderComments] = useState('');
 
@@ -40,7 +37,7 @@ const CartWidget = () => {
   }, [showDropdown]);
 
   // React Query para seguimiento de pedidos
-  const { data: orderStatusList = [], isLoading: statusLoading, refetch: refetchStatus } = useQuery({
+  const { data: orderStatusList = [] } = useQuery({
     queryKey: ['orderStatusList', localStorage.getItem('orderCodes')],
     queryFn: async () => {
       let orderCodes = [];
@@ -341,7 +338,7 @@ const CartWidget = () => {
                 <button type="button" className="btn-close" onClick={handleModal}></button>
               </div>
               <div className="modal-body">
-                <p>¿Deseas confirmar la compra? (Funcionalidad en desarrollo)</p>
+                <p>¿Deseas confirmar la compra?</p>
                 <ul className="list-group mb-3">
                   {cart.map((item, idx) => (
                     <li key={idx} className="list-group-item d-flex justify-content-between align-items-center">
@@ -375,8 +372,8 @@ const CartWidget = () => {
                     <img src="https://placehold.co/100x100?text=QR" alt="QR de pago" className="img-fluid rounded shadow" />
                   </div>
                   <div className="flex-grow-1 small text-start">
-                    Te dejamos el código QR para que puedas adelantar el pago, o bien aguardar a que te contactemos y coordinar el pedido.<br />
-                    <strong>¡Muchas gracias por tu confianza!</strong>
+                    Te facilitamos el código QR para que puedas adelantar el pago, o bien aguardá a que te contactemos para avanzar con el pedido.<br/>
+                    <strong>¡Muchas gracias por elegirnos!</strong>
                   </div>
                 </div>
               </div>

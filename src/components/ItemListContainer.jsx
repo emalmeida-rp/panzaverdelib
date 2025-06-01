@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import { useCart } from '../context/CartContext';
 import { fetchWithAuth } from '../utils/api';
 import ProductDetailModal from './ProductDetailModal';
 import { useQuery } from '@tanstack/react-query';
 import styles from './ItemListContainer.module.scss';
-
-
-const API_URL = import.meta.env.VITE_API_URL;
 
 const ItemListContainer = () => {
   const [products, setProducts] = useState([]);
@@ -18,9 +14,7 @@ const ItemListContainer = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showNoResults, setShowNoResults] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { addToCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState('');
   const location = useLocation();
 
@@ -95,11 +89,6 @@ const ItemListContainer = () => {
   const handleCloseModal = () => {
     setSelectedProduct(null);
     setSearchParams({});
-  };
-
-  const handleCategoryFilter = (categoryId) => {
-    setSelectedCategory(categoryId);
-    setSearchParams({ category: categoryId });
   };
 
   const handleShare = (product, platform) => {

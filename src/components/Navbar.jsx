@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import CartWidget from './CartWidget';
 import { useQuery } from '@tanstack/react-query';

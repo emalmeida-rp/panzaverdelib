@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
@@ -7,7 +6,6 @@ import Button from 'react-bootstrap/Button';
 const ProductDetailModal = ({ show, onHide, product, onShare }) => {
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
-  const navigate = useNavigate();
 
   // Resetear la cantidad cuando cambia el producto o se abre el modal
   useEffect(() => {
