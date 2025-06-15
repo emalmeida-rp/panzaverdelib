@@ -6,9 +6,99 @@ import { fetchWithAuth } from '../utils/api';
 import ProductDetailModal from './ProductDetailModal';
 import { useQuery } from '@tanstack/react-query';
 import styles from './ItemListContainer.module.scss';
+import 'animate.css';
+import { motion } from 'framer-motion';
+
+const shineVariants = {
+  initial: { boxShadow: '0 4px 12px rgba(0,0,0,0.08)' },
+  hover: {
+    boxShadow: '0 8px 32px rgba(41,128,185,0.18)',
+    transition: { duration: 0.3 },
+  },
+};
+
+const bounceVariants = {
+  initial: { y: 0 },
+  hover: {
+    y: -10,
+    transition: { type: 'spring', stiffness: 400, damping: 10 },
+  },
+};
+
+const pulseVariants = {
+  initial: { boxShadow: '0 4px 12px rgba(0,0,0,0.08)' },
+  animate: {
+    boxShadow: [
+      '0 4px 12px rgba(0,0,0,0.08)',
+      '0 0 32px 4px #ffe066',
+      '0 4px 12px rgba(0,0,0,0.08)'
+    ],
+    transition: { duration: 1.5, repeat: Infinity, repeatType: 'loop' },
+  },
+};
+
+const badgePulseVariants = {
+  initial: { scale: 1 },
+  animate: {
+    scale: [1, 1.15, 1],
+    transition: { duration: 1, repeat: Infinity, repeatType: 'loop' },
+  },
+};
+
+// Glow: borde resplandeciente
+const glowVariants = {
+  initial: { boxShadow: '0 0 0 0px #ffe066' },
+  animate: {
+    boxShadow: [
+      '0 0 0 0px #ffe066',
+      '0 0 16px 4px #ffe066',
+      '0 0 0 0px #ffe066'
+    ],
+    transition: { duration: 1.5, repeat: Infinity, repeatType: 'loop' },
+  },
+};
+
+// Floating: movimiento suave
+const floatingVariants = {
+  initial: { y: 0 },
+  animate: {
+    y: [0, -8, 0, 8, 0],
+    transition: { duration: 2.5, repeat: Infinity, repeatType: 'loop' },
+  },
+};
+
+// Fade: aparición/desaparición
+const fadeVariants = {
+  initial: { opacity: 0.7 },
+  animate: { opacity: [0.7, 1, 0.7], transition: { duration: 2, repeat: Infinity, repeatType: 'loop' } },
+};
+
+// Sombra dinámica
+const shadowVariants = {
+  initial: { boxShadow: '0 4px 12px rgba(0,0,0,0.08)' },
+  animate: {
+    boxShadow: [
+      '0 4px 12px rgba(0,0,0,0.08)',
+      '0 8px 32px rgba(41,128,185,0.18)',
+      '0 4px 12px rgba(0,0,0,0.08)'
+    ],
+    transition: { duration: 1.5, repeat: Infinity, repeatType: 'loop' },
+  },
+};
+
+// Badge wave
+const badgeWaveVariants = {
+  initial: { scale: 1 },
+  animate: {
+    scale: [1, 1.1, 1],
+    rotate: [0, 8, -8, 0],
+    transition: { duration: 1.2, repeat: Infinity, repeatType: 'loop' },
+  },
+};
 
 const ItemListContainer = () => {
   const [products, setProducts] = useState([]);
+  const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,14 +133,22 @@ const ItemListContainer = () => {
   }, [categoryParam, location.key]);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetchWithAuth('/products');
-        const data = await response.json();
-        setProducts(data);
+        // Cargar productos y ofertas en paralelo
+        const [productsRes, offersRes] = await Promise.all([
+          fetchWithAuth('/products'),
+          fetchWithAuth('/campaigns/offers')
+        ]);
+        
+        const productsData = await productsRes.json();
+        const offersData = await offersRes.json();
+        
+        setProducts(productsData);
+        setOffers(offersData);
         
         if (productId) {
-          const product = data.find(p => p._id === productId);
+          const product = productsData.find(p => p._id === productId);
           if (product) {
             setSelectedProduct(product);
           }
@@ -63,8 +161,32 @@ const ItemListContainer = () => {
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, [productId]);
+
+  // Función para obtener la campaña de un producto
+  const getProductCampaign = (productId) => {
+    return offers.find(offer => offer._id === productId)?.campaign;
+  };
+
+  // Función para calcular el precio final y ahorro
+  const calculatePrice = (product) => {
+    const campaign = getProductCampaign(product._id);
+    if (!campaign) return { finalPrice: product.price, ahorro: 0 };
+
+    let finalPrice = product.price;
+    let ahorro = 0;
+
+    if (campaign.discountType === 'percent') {
+      finalPrice = product.price * (1 - campaign.discountValue / 100);
+      ahorro = product.price - finalPrice;
+    } else if (campaign.discountType === 'fixed') {
+      finalPrice = Math.max(0, product.price - campaign.discountValue);
+      ahorro = product.price - finalPrice;
+    }
+
+    return { finalPrice, ahorro };
+  };
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,7 +204,16 @@ const ItemListContainer = () => {
   }, [searchTerm, filteredProducts]);
 
   const handleAddToCart = (product) => {
-    setSelectedProduct(product);
+    const campaign = getProductCampaign(product._id);
+    const { finalPrice } = calculatePrice(product);
+    
+    // Agregar al carrito con el precio final (con descuento si aplica)
+    const productWithPrice = {
+      ...product,
+      price: finalPrice
+    };
+    
+    setSelectedProduct(productWithPrice);
     setSearchParams({ product: product._id });
   };
 
@@ -108,6 +239,17 @@ const ItemListContainer = () => {
       default:
         break;
     }
+  };
+
+  // Crear array de campañas activas a partir de offers
+  const activeCampaigns = offers
+    .map(offer => offer.campaign)
+    .filter((c, idx, arr) => c && arr.findIndex(x => x._id === c._id) === idx);
+
+  const handleOpenModal = (product) => {
+    // Buscar si el producto está en offers (tiene campaña)
+    const offerProduct = offers.find(o => o._id === product._id);
+    setSelectedProduct(offerProduct || product);
   };
 
   if (loading) return (
@@ -195,28 +337,115 @@ const ItemListContainer = () => {
           )}
         </div>
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 tienda-body">
-          {filteredProducts.map((product, idx) => (
-            <div className="col" key={product._id} data-aos="fade-up" data-aos-delay={idx * 50}>
-              <div className="card h-100 bg-light card-products product-card">
-                <div className="product-image-container">
-                  <img src={product.image} className="card-img-top img-fluid img-thumbnail img-market" alt={product.name} />
-                </div>
-                <div className="card-header text-center">
-                  <h3 className="h5 mb-0">{product.name}</h3>
-                </div>
-                <div className="card-body text-center">
-                  <h4 className="card-text price mb-3">${product.price}</h4>
-                  <button 
-                    className={`btn w-100 ${product.isAvailable && product.stock > 0 ? 'btn-secondary' : 'btn-danger'}`}
-                    onClick={() => handleAddToCart(product)}
-                    disabled={!product.isAvailable || product.stock <= 0}
-                  >
-                    {product.isAvailable && product.stock > 0 ? 'Agregar al carrito' : 'No disponible'}
-                  </button>
-                </div>
+          {filteredProducts.map((product, idx) => {
+            const campaign = getProductCampaign(product._id);
+            const { finalPrice, ahorro } = calculatePrice(product);
+            const effect = campaign?.visualEffect;
+            const color = campaign?.color || '#e67e22';
+
+            // Elegir variantes de animación según el efecto
+            let cardVariants = {};
+            let cardInitial = 'initial';
+            let cardAnimate = undefined;
+            let cardWhileHover = undefined;
+
+            if (effect === 'shine') {
+              cardVariants = shineVariants;
+              cardWhileHover = 'hover';
+            } else if (effect === 'bounce') {
+              cardVariants = bounceVariants;
+              cardWhileHover = 'hover';
+            } else if (effect === 'pulse') {
+              cardVariants = pulseVariants;
+              cardAnimate = 'animate';
+            } else if (effect === 'glow') {
+              cardVariants = glowVariants;
+              cardAnimate = 'animate';
+            } else if (effect === 'floating') {
+              cardVariants = floatingVariants;
+              cardAnimate = 'animate';
+            } else if (effect === 'fade') {
+              cardVariants = fadeVariants;
+              cardAnimate = 'animate';
+            } else if (effect === 'shadow') {
+              cardVariants = shadowVariants;
+              cardAnimate = 'animate';
+            }
+
+            return (
+              <div className="col" key={product._id} data-aos="fade-up" data-aos-delay={idx * 50}>
+                <motion.div
+                  className={`card h-100 bg-light card-products product-card`}
+                  variants={cardVariants}
+                  initial={cardInitial}
+                  animate={cardAnimate}
+                  whileHover={cardWhileHover}
+                  style={{
+                    position: 'relative',
+                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                  }}
+                >
+                  {campaign && (
+                    <motion.div
+                      className={styles.offerBadge}
+                      style={{
+                        background: color,
+                        position: 'absolute',
+                        top: 12,
+                        right: 12,
+                        zIndex: 2,
+                      }}
+                      variants={
+                        effect === 'badge' ? badgePulseVariants :
+                        effect === 'wave' ? badgeWaveVariants : undefined
+                      }
+                      initial="initial"
+                      animate={
+                        effect === 'badge' || effect === 'wave' ? 'animate' : undefined
+                      }
+                    >
+                      {campaign.discountType === 'percent'
+                        ? `-${campaign.discountValue}% OFF`
+                        : `-$${campaign.discountValue} OFF`}
+                    </motion.div>
+                  )}
+                  <div className="product-image-container">
+                    <img src={product.image} className="card-img-top img-fluid img-thumbnail img-market" alt={product.name} />
+                  </div>
+                  <div className="card-header text-center">
+                    <h3 className="h5 mb-0">{product.name}</h3>
+                  </div>
+                  <div className="card-body text-center">
+                    <div className="mb-3">
+                      <h4 className="card-text price mb-0" style={{ color: '#218838', fontWeight: 600 }}>
+                        ${finalPrice.toFixed(2)}
+                        {campaign && (
+                          <span style={{ textDecoration: 'line-through', color: '#888', fontSize: '0.9rem', marginLeft: 8 }}>
+                            ${product.price.toFixed(2)}
+                          </span>
+                        )}
+                      </h4>
+                      {campaign && ahorro > 0 && (
+                        <small className="text-warning" style={{ fontWeight: 500 }}>
+                          ¡Ahorra ${ahorro.toFixed(2)}!
+                        </small>
+                      )}
+                    </div>
+                    <button 
+                      className={`btn w-100 ${product.isAvailable && product.stock > 0 ? 'btn-secondary' : 'btn-danger'}`}
+                      onClick={() => handleOpenModal(product)}
+                      disabled={!product.isAvailable || product.stock <= 0}
+                    >
+                      {product.isAvailable && product.stock > 0 ? 'Agregar al carrito' : 'No disponible'}
+                    </button>
+                  </div>
+                  {effect === 'firework' && (
+                    <span className={styles.fireworkEffect}></span>
+                  )}
+                </motion.div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -225,6 +454,7 @@ const ItemListContainer = () => {
         onHide={handleCloseModal}
         product={selectedProduct}
         onShare={handleShare}
+        campaigns={activeCampaigns}
       />
     </div>
   );

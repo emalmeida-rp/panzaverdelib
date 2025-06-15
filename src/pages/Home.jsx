@@ -3,22 +3,15 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import Carousel from 'react-bootstrap/Carousel';
 import 'animate.css';
+import axios from 'axios';
+import styles from './BrandCards.module.scss';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const carouselImages = [
   { src: '/img/carousel1.webp', alt: 'daily1', caption: 'Primera diapositiva', desc: 'Estamos trabajando en el contenido!.' },
   { src: '/img/carousel2.webp', alt: 'daily2', caption: 'Segunda diapositiva', desc: 'Estamos trabajando en el contenido!.' },
   { src: '/img/carousel3.webp', alt: 'daily3', caption: 'Tercera diapositiva', desc: 'Estamos trabajando en el contenido.' },
   { src: '/img/carousel4.webp', alt: 'daily4', caption: 'Cuarta diapositiva', desc: 'Estamos trabajando en el contenido.' },
-];
-
-const brands = [
-  { name: 'Maped', img: '/img/card-logo-maped.png', desc: 'Marca líder en útiles escolares.' },
-  { name: 'Faber Castell', img: 'https://www.faber-castell.com.ar/-/media/Faber-Castell-new/Logo-FC-SVG.ashx?sc_lang=es-AR&mh=61&la=es-AR&h=61&w=185&mw=194&hash=1FF8BEBD73CB354682069B60ADA946CE', desc: 'La excelencia en escritura desde 1761.' },
-  { name: 'Bic', img: '/img/card-logo-bic.jpg', desc: 'Las lapiceras más reconocidas.' },
-  { name: 'A. Estrada', img: '/img/card-logo-angel.jpg', desc: 'Fabricante de productos de papelería.' },
-  { name: 'America', img: '/img/card-logo-america.jpg', desc: 'Cuadernos confiables y duraderos' },
-  { name: 'Congreso', img: '/img/card-logo-congreso.jpg', desc: 'Mejor opción económica' },
-  { name: 'Rivadavia', img: '/img/card-logo-rivadavia.jpg', desc: 'Excelencia en papelería' },
 ];
 
 const frases = [
@@ -38,6 +31,66 @@ const Home = () => {
   // Animación de frases
   const [fraseIdx, setFraseIdx] = useState(0);
   const [fade, setFade] = useState(true);
+
+  // Estado para marcas
+  const [brands, setBrands] = useState([]);
+  const [brandsLoading, setBrandsLoading] = useState(true);
+  const [brandsError, setBrandsError] = useState(null);
+
+  // Ofertas
+  const [offers, setOffers] = useState([]);
+  const [offersLoading, setOffersLoading] = useState(true);
+
+  // Banners/Noticias
+  const [banners, setBanners] = useState([]);
+  const [bannersLoading, setBannersLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBrands = async () => {
+      setBrandsLoading(true);
+      try {
+        const { data } = await axios.get(`${API_URL}/brands`);
+        setBrands(data.filter(b => b.active));
+      } catch (err) {
+        console.error('Error al cargar marcas:', err);
+        setBrandsError('Error al cargar marcas');
+      } finally {
+        setBrandsLoading(false);
+      }
+    };
+    fetchBrands();
+  }, []);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      setOffersLoading(true);
+      try {
+        const { data } = await axios.get(`${API_URL}/campaigns/offers`);
+        setOffers(data);
+      } catch (err) {
+        setOffers([]);
+        console.error('Error al cargar marcas:', err);
+      } finally {
+        setOffersLoading(false);
+      }
+    };
+    fetchOffers();
+  }, []);
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      setBannersLoading(true);
+      try {
+        const { data } = await axios.get(`${API_URL}/banners?active=true`);
+        setBanners(data);
+      } catch (err) {
+        setBanners([]);
+      } finally {
+        setBannersLoading(false);
+      }
+    };
+    fetchBanners();
+  }, []);
 
   useEffect(() => {
     const timeout = setTimeout(() => setFade(false), 2000);
@@ -115,26 +168,189 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Tarjetas de marcas */}
-      <aside>
-        <div className="alert alert-secondary text-center" role="alert">
-          <p className="card-title mb-0">Trabajamos con las siguientes marcas:</p>
+      {/* Carrusel de productos en oferta */}
+      <section className="mb-5">
+        <div className="alert alert-warning text-center mb-3" role="alert" style={{ fontWeight: 600, fontSize: '1.2rem', letterSpacing: 0.5 }}>
+          ¡Productos en Oferta!
         </div>
-        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 branches justify-content-center">
-          {brands.map((brand, idx) => (
-            <div className="col" key={idx} data-aos="fade-up" data-aos-delay={idx * 100}>
-              <div className="card card-branches h-100">
-                <img src={brand.img} className="card-img-top img-fluid img-branches" alt={`Logo ${brand.name}`} />
-                <div className="card-body text-center">
-                  <p className="card-title fw-bold mb-1">{brand.name}</p>
-                  <p className="card-text mb-2">{brand.desc}</p>
-                  <a href="#" className="btn btn-primary">Ver más</a>
+        {offersLoading ? (
+          <div className="text-center my-4">Cargando ofertas...</div>
+        ) : offers.length === 0 ? (
+          <div className="alert alert-info text-center">No hay productos en oferta actualmente.</div>
+        ) : (
+          <Carousel
+            indicators={offers.length > 1}
+            controls={offers.length > 1}
+            fade
+            interval={4200}
+            className={styles.offerCarousel}
+            style={{ maxWidth: 900, margin: '0 auto', borderRadius: 18, boxShadow: '0 4px 24px rgba(41,128,185,0.10)' }}
+          >
+            {offers.map((offer, idx) => {
+              // Calcular precio final y ahorro
+              const price = offer.price;
+              let finalPrice = price;
+              let ahorro = 0;
+              if (offer.campaign.discountType === 'percent') {
+                finalPrice = price * (1 - offer.campaign.discountValue / 100);
+                ahorro = price - finalPrice;
+              } else if (offer.campaign.discountType === 'fixed') {
+                finalPrice = Math.max(0, price - offer.campaign.discountValue);
+                ahorro = price - finalPrice;
+              }
+              // Efectos visuales
+              const effect = offer.campaign.visualEffect;
+              const color = offer.campaign.color || '#e67e22';
+              return (
+                <Carousel.Item key={offer._id} className={styles.offerCarouselItem}>
+                  <div
+                    className={
+                      styles.offerCard +
+                      (effect === 'shine' ? ' animate__animated animate__pulse animate__faster' : '') +
+                      (effect === 'bounce' ? ' animate__animated animate__bounce animate__faster' : '') +
+                      (effect === 'pulse' ? ' animate__animated animate__heartBeat animate__faster' : '')
+                    }
+                    style={{
+                      background: '#fff',
+                      borderRadius: 18,
+                      boxShadow: '0 2px 16px rgba(41,128,185,0.10)',
+                      padding: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 32,
+                      minHeight: 320,
+                      position: 'relative',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {/* Badge de oferta */}
+                    <div
+                      className={styles.offerBadge}
+                      style={{
+                        background: color,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                        position: 'absolute',
+                        top: 24,
+                        left: 24,
+                        zIndex: 2,
+                        fontWeight: 700,
+                        fontSize: '1.1rem',
+                        borderRadius: 8,
+                        padding: '0.5em 1.1em',
+                        color: '#fff',
+                        letterSpacing: 0.5,
+                        animation: effect === 'badge' ? 'pulseBadge 1.2s infinite alternate' : 'none',
+                      }}
+                    >
+                      {offer.campaign.discountType === 'percent'
+                        ? `-${offer.campaign.discountValue}% OFF`
+                        : `-$${offer.campaign.discountValue} OFF`}
+                    </div>
+                    {/* Imagen */}
+                    <img
+                      src={offer.image}
+                      alt={offer.name}
+                      style={{ width: 180, height: 180, objectFit: 'contain', borderRadius: 12, boxShadow: '0 1px 8px rgba(41,128,185,0.08)' }}
+                    />
+                    {/* Info */}
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ fontWeight: 700, color: '#2980b9', marginBottom: 8 }}>{offer.name}</h4>
+                      <div style={{ fontSize: '1.1rem', color: '#555', marginBottom: 8 }}>{offer.description}</div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 600, color: '#218838', marginBottom: 6 }}>
+                        ${finalPrice.toFixed(2)}
+                        <span style={{ textDecoration: 'line-through', color: '#888', fontSize: '1rem', marginLeft: 10 }}>
+                          ${price.toFixed(2)}
+                        </span>
+                      </div>
+                      <div style={{ color: '#e67e22', fontWeight: 500, fontSize: '1.05rem' }}>
+                        ¡Ahorra ${ahorro.toFixed(2)}!
+                      </div>
+                      {effect === 'firework' && (
+                        <span className={styles.fireworkEffect}></span>
+                      )}
+                    </div>
+                  </div>
+                </Carousel.Item>
+              );
+            })}
+          </Carousel>
+        )}
+      </section>
+
+      {/* Carrusel de banners/noticias */}
+      <section className="mb-5">
+        {bannersLoading ? (
+          <div className="text-center my-4">Cargando noticias...</div>
+        ) : banners.length === 0 ? (
+          <div className="alert alert-info text-center">No hay noticias destacadas actualmente.</div>
+        ) : (
+          <Carousel
+            indicators={banners.length > 1}
+            controls={banners.length > 1}
+            fade
+            interval={6000}
+            style={{ maxWidth: 900, margin: '0 auto', borderRadius: 18, boxShadow: '0 4px 24px rgba(41,128,185,0.10)' }}
+          >
+            {banners.map((banner, idx) => (
+              <Carousel.Item key={banner._id}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 32,
+                  minHeight: 220,
+                  background: '#f8fafc',
+                  borderRadius: 18,
+                  padding: 32,
+                  boxShadow: '0 2px 16px rgba(41,128,185,0.10)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}>
+                  {banner.image && (
+                    <img
+                      src={banner.image}
+                      alt={banner.title}
+                      style={{ width: 180, height: 120, objectFit: 'cover', borderRadius: 12, boxShadow: '0 1px 8px rgba(41,128,185,0.08)' }}
+                    />
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ fontWeight: 700, color: '#2980b9', marginBottom: 8 }}>{banner.title}</h4>
+                    <div style={{ fontSize: '1.1rem', color: '#555', marginBottom: 8 }}>{banner.message}</div>
+                    {banner.link && (
+                      <a href={banner.link} target="_blank" rel="noopener noreferrer" style={{ color: '#e67e22', fontWeight: 600, textDecoration: 'underline' }}>
+                        Más información
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </Carousel.Item>
+            ))}
+          </Carousel>
+        )}
+      </section>
+
+      {/* Tarjetas de marcas */}
+
+<aside>
+  <div className="alert alert-secondary text-center" role="alert">
+    <p className="card-title mb-0">Trabajamos con las siguientes marcas:</p>
+  </div>
+  {brandsLoading ? (
+    <div className="text-center my-4">Cargando marcas...</div>
+  ) : brandsError ? (
+    <div className="alert alert-danger text-center">{brandsError}</div>
+  ) : brands.length === 0 ? (
+    <div className="alert alert-info text-center">No hay marcas registradas.</div>
+  ) : (
+    <div className={styles.brandGrid}>
+      {brands.map((brand, idx) => (
+        <div className={styles.brandBadge} key={brand._id || idx} title={brand.name}>
+          <img src={brand.logo} className={styles.brandLogo} alt={`Logo ${brand.name}`} />
+          <div className={styles.brandName}>{brand.name}</div>
         </div>
-      </aside>
+      ))}
+    </div>
+  )}
+</aside>
     </div>
   );
 };

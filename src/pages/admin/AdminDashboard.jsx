@@ -5,14 +5,23 @@ import { useAlert } from '../../context/AlertContext';
 import Swal from 'sweetalert2';
 import GalleryAdmin from './GalleryAdmin';
 import OrdersAdmin from './OrdersAdmin';
+import SalesAdmin from './SalesAdmin';
+import SalesDashboard from './SalesDashboard';
 import Modal from 'react-bootstrap/Modal';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import { useCart } from '../../context/CartContext';
 import { useQuery } from '@tanstack/react-query';
 import styles from './AdminDashboard.module.scss';
 import ProductEditModal from './ProductEditModal';
+import BrandAdmin from '../../components/BrandAdmin';
+import { FaBell, FaBoxOpen, FaClipboardList, FaBullhorn, FaBox, FaTags, FaImages, FaChartLine, FaTrademark, FaShoppingCart } from 'react-icons/fa';
+import CampaignsAdmin from './CampaignsAdmin';
+import BannerAdmin from '../../components/BannerAdmin';
+
 dayjs.extend(utc);
+dayjs.extend(relativeTime);
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('productos');
@@ -67,17 +76,10 @@ const AdminDashboard = () => {
     }
   });
   const [showEditModal, setShowEditModal] = useState(false);
-
-  const { data: notifOrders = [], isLoading: notifLoading, error: notifError, refetch: refetchNotif } = useQuery({
-    queryKey: ['notifOrders'],
-    queryFn: async () => {
-      const res = await fetchWithAuth('/orders');
-      if (!res.ok) throw new Error('Error al cargar pedidos');
-      const data = await res.json();
-      return data.filter(o => o.status === 'pendiente').slice(0, 5);
-    },
-    refetchInterval: 60000 // refresca cada 1 minuto
-  });
+  // Hook para notificaciones (pedidos y stock bajo)
+  const [notifications, setNotifications] = useState([]);
+  const [notifLoading, setNotifLoading] = useState(true);
+  const [notifError, setNotifError] = useState(null);
 
   const { data: orders = [], isLoading: ordersLoading, error: ordersError, refetch: refetchOrders } = useQuery({
     queryKey: ['orders'],
@@ -88,24 +90,25 @@ const AdminDashboard = () => {
     }
   });
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetchWithAuth('/products');
-        if (!response.ok) {
-          throw new Error('Error al cargar los productos');
-        }
-        const data = await response.json();
-        setProducts(data);
-      } catch (err) {
-        console.error('Error:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  // Fetch productos
+  const fetchProducts = async () => {
+    try {
+      const response = await fetchWithAuth('/products');
+      if (!response.ok) {
+        throw new Error('Error al cargar los productos');
       }
-    };
+      const data = await response.json();
+      setProducts(data);
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchProducts();
+  useEffect(() => {
+    fetchProducts(); // Llamar a la función definida afuera
   }, []);
 
   // Fetch pedidos completados
@@ -362,12 +365,15 @@ const AdminDashboard = () => {
       return;
     }
     try {
-      const response = await fetchWithAuth(`/products/search?term=${term}`);
-      if (!response.ok) return;
+      const response = await fetchWithAuth(`/products/search?term=${encodeURIComponent(term)}`);
+      if (!response.ok) {
+        throw new Error('Error en la búsqueda');
+      }
       const data = await response.json();
       setSearchResults(data);
     } catch (err) {
       console.error('Error:', err);
+      showAlert('Error al buscar productos', 'error');
     }
   };
 
@@ -522,6 +528,25 @@ const AdminDashboard = () => {
     setProducts(products.map(p => p._id === updatedProduct._id ? updatedProduct : p));
   };
 
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      setNotifLoading(true);
+      try {
+        const res = await fetchWithAuth('/notifications');
+        if (!res.ok) throw new Error('Error al cargar notificaciones');
+        const data = await res.json();
+        setNotifications(data);
+      } catch (err) {
+        setNotifError(err.message);
+      } finally {
+        setNotifLoading(false);
+      }
+    };
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   if (loading && activeTab === 'productos') return (
     <div className="container mt-4">
       <div className="table-responsive">
@@ -561,551 +586,250 @@ const AdminDashboard = () => {
         <h1 className={styles.dashboardTitle}>Panel de Administración</h1>
         <div className="d-flex gap-2">
           <div style={{ position: 'relative', display: 'inline-block' }}>
-            <button className={`btn btn-outline-primary position-relative ${styles.dashboardBtn} ${styles.dashboardBtnOutline}`} onClick={() => setNotifDropdownOpen(!notifDropdownOpen)} ref={notifDropdownRef}>
-            <i className="bi bi-bell" style={{ fontSize: 22 }}></i>
-              {notifOrders.filter(o => !readNotifIds.includes(o._id)).length > 0 && (
-              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                  {notifOrders.filter(o => !readNotifIds.includes(o._id)).length}
-              </span>
-            )}
-          </button>
-            {notifDropdownOpen && (
-              <div className={`${styles.notifDropdownAnchored} ${styles.animateFadeSlide}`} ref={notifDropdownRef}>
-                <div className={styles.notifDropdownArrow}></div>
-                <div className="dropdown-menu show p-3 shadow border-0">
-                  <h6 className="dropdown-header">Notificaciones de nuevos pedidos</h6>
+            <div className={styles.notifications} ref={notifDropdownRef}>
+              <button
+                className={styles.notifButton}
+                onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
+              >
+                <FaBell />
+                {notifications.filter(n => !n.read).length > 0 && (
+                  <span className={styles.notifBadge}>{notifications.filter(n => !n.read).length}</span>
+                )}
+              </button>
+              {notifDropdownOpen && (
+                <div className={styles.notifDropdown}>
                   {notifLoading ? (
-                    <div className="text-center text-muted">Cargando notificaciones...</div>
-                  ) : notifOrders.length === 0 ? (
-                    <div className="text-center text-muted">No hay pedidos nuevos pendientes.</div>
+                    <div className={styles.notifLoading}>Cargando...</div>
+                  ) : notifError ? (
+                    <div className={styles.notifError}>Error al cargar notificaciones</div>
+                  ) : notifications.length === 0 ? (
+                    <div className={styles.notifEmpty}>No hay notificaciones</div>
                   ) : (
-                    <ul className="list-group mb-2">
-                      {notifOrders.map(order => (
-                        <li key={order._id} className={`list-group-item d-flex justify-content-between align-items-center ${readNotifIds.includes(order._id) ? 'bg-light text-muted' : ''}`}
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => handleMarkAsRead(order._id)}
-                        >
-                          <span className="fw-bold">{order.code}</span>
-                          <span className="badge bg-warning text-dark">Pendiente</span>
-                          {readNotifIds.includes(order._id) && <i className="bi bi-check2-circle ms-2 text-success"></i>}
-                        </li>
-                      ))}
-                    </ul>
+                    notifications.slice(0, 10).map(notif => (
+                      <div
+                        key={notif._id}
+                        className={`${styles.notifItem} ${notif.read ? styles.read : ''}`}
+                        onClick={() => handleMarkAsRead(notif._id)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className={styles.notifIcon}>
+                          {notif.type === 'stock_low' ? (
+                            <FaBoxOpen color="#e67e22" />
+                          ) : (
+                            <FaClipboardList color="#2980b9" />
+                          )}
+                        </div>
+                        <div className={styles.notifContent}>
+                          <p>{notif.message}</p>
+                          <small>{dayjs(notif.createdAt).fromNow()}</small>
+                          {notif.link && (
+                            <a href={notif.link} className={styles.notifLink} onClick={e => e.stopPropagation()}>
+                              Ver producto
+                            </a>
+                          )}
+                        </div>
+                        {!notif.read && (
+                          <i className="fas fa-check-circle"></i>
+                        )}
+                      </div>
+                    ))
                   )}
-                  <button className="btn btn-outline-secondary w-100" onClick={() => refetchNotif()}>
-                    <i className="bi bi-arrow-clockwise me-1"></i> Refrescar
-                  </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-          <button 
-            className={`btn btn-primary ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}
-            onClick={() => { setSelectedProduct(null); setShowEditModal(true); }}
-          >
-            Agregar Producto
-          </button>
-          <button 
-            className={`btn btn-danger ${styles.dashboardBtn} ${styles.dashboardBtnDanger}`}
-            onClick={handleLogout}
-          >
-            <i className="bi bi-box-arrow-right me-2"></i>
-            Cerrar Sesión
+          <button className={`btn btn-outline-danger ${styles.dashboardBtn} ${styles.dashboardBtnOutline}`} onClick={handleLogout}>
+            <i className="bi bi-box-arrow-right" style={{ fontSize: 22 }}></i>
           </button>
         </div>
       </div>
 
-      {/* Pestañas de navegación */}
-      <ul className={styles.dashboardTabs + ' nav nav-tabs mb-4'}>
-        <li className="nav-item">
-          <button
-            className={styles.dashboardTab + (activeTab === 'productos' ? ' active' : '') + ' ' + styles.dashboardBtn}
-            onClick={() => setActiveTab('productos')}
-          >
-            Productos
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={styles.dashboardTab + (activeTab === 'galeria' ? ' active' : '') + ' ' + styles.dashboardBtn}
-            onClick={() => setActiveTab('galeria')}
-          >
-            Galería
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={styles.dashboardTab + (activeTab === 'pedidos' ? ' active' : '') + ' ' + styles.dashboardBtn}
-            onClick={() => setActiveTab('pedidos')}
-          >
-            Pedidos
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={styles.dashboardTab + (activeTab === 'historico' ? ' active' : '') + ' ' + styles.dashboardBtn}
-            onClick={() => setActiveTab('historico')}
-          >
-            Histórico
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={styles.dashboardTab + (activeTab === 'categorias' ? ' active' : '') + ' ' + styles.dashboardBtn}
-            onClick={() => setActiveTab('categorias')}
-          >
-            Categorías
-          </button>
-        </li>
-      </ul>
+      <div className="d-flex gap-2 mb-4">
+        <button
+          className={`${styles.navItem} ${activeTab === 'productos' ? styles.active : ''}`}
+          onClick={() => setActiveTab('productos')}
+        >
+          <FaBox style={{ marginRight: 8 }} /> Productos
+        </button>
+        <button
+          className={`${styles.navItem} ${activeTab === 'pedidos' ? styles.active : ''}`}
+          onClick={() => setActiveTab('pedidos')}
+        >
+          <FaShoppingCart style={{ marginRight: 8 }} /> Pedidos
+        </button>
+        <button
+          className={`${styles.navItem} ${activeTab === 'dashboard' ? styles.active : ''}`}
+          onClick={() => setActiveTab('dashboard')}
+        >
+          <FaChartLine style={{ marginRight: 8 }} /> Dashboard de Ventas
+        </button>
+        <button
+          className={`${styles.navItem} ${activeTab === 'galeria' ? styles.active : ''}`}
+          onClick={() => setActiveTab('galeria')}
+        >
+          <FaImages style={{ marginRight: 8 }} /> Galería
+        </button>
+        <button
+          className={`${styles.navItem} ${activeTab === 'marcas' ? styles.active : ''}`}
+          onClick={() => setActiveTab('marcas')}
+        >
+          <FaTags style={{ marginRight: 8 }} /> Marcas
+        </button>
+        <button
+          className={`${styles.navItem} ${activeTab === 'campanias' ? styles.active : ''}`}
+          onClick={() => setActiveTab('campanias')}
+        >
+          <FaBullhorn style={{ marginRight: 8 }} /> Campañas
+        </button>
+        <button
+          className={`${styles.navItem} ${activeTab === 'banners' ? styles.active : ''}`}
+          onClick={() => setActiveTab('banners')}
+        >
+          <FaBullhorn style={{ marginRight: 8 }} /> Carrusel/Noticias
+        </button>
+      </div>
 
-      {/* Contenido de la pestaña activa */}
       {activeTab === 'productos' && (
         catLoading || categories.length === 0 ? (
           <div className="text-center my-4">Cargando categorías...</div>
         ) : (
-        <>
-          {/* Selector de cantidad y paginación */}
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <div>
-              <label className="me-2">Mostrar:</label>
-              <select
-                value={itemsPerPage}
-                onChange={e => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
+          <>
+            {/* Selector de cantidad y paginación */}
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <label className="me-2">Mostrar:</label>
+                <select
+                  value={itemsPerPage}
+                  onChange={e => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
                   className={styles.dashboardSelect + ' form-select d-inline-block w-auto'}
-              >
-                {[5, 10, 20, 50].map(num => (
-                  <option key={num} value={num}>{num}</option>
-                ))}
-              </select>
-              <span className="ms-2">productos por página</span>
+                >
+                  {[5, 10, 20, 50].map(num => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                </select>
+                <span className="ms-2">productos por página</span>
+              </div>
+              <div>
+                Página {currentPage} de {totalPages}
+                <button
+                  className="btn btn-sm btn-secondary ms-2"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </button>
+                <button
+                  className="btn btn-sm btn-secondary ms-2"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                </button>
+              </div>
             </div>
-            <div>
-              Página {currentPage} de {totalPages}
-              <button
-                className="btn btn-sm btn-secondary ms-2"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </button>
-              <button
-                className="btn btn-sm btn-secondary ms-2"
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
 
-          <div className="mb-4">
-            <div className="input-group">
-              <span className="input-group-text">
-                <i className="bi bi-search"></i>
-              </span>
-              <input
-                type="text"
+            <div className="mb-4">
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-search"></i>
+                </span>
+                <input
+                  type="text"
                   className={styles.dashboardInput + ' form-control'}
-                placeholder="Buscar productos por nombre o descripción..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+                  placeholder="Buscar productos por nombre o descripción..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <button
+                  className="btn btn-success"
+                  type="button"
+                  onClick={() => {
+                    setSelectedProduct(null);
+                    setShowEditModal(true);
+                  }}
+                  title="Agregar nuevo producto"
+                >
+                  <i className="bi bi-plus-lg"></i>
+                </button>
+              </div>
             </div>
-          </div>
 
             <div className={styles.tableContainer}>
               <table className={styles.dashboardTable}>
-              <thead>
-                <tr>
-                  <th>Imagen</th>
-                  <th>Nombre</th>
-                    <th>Categoría</th>
-                  <th>Precio</th>
-                  <th>Stock</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                  {products.map(product => (
-                  <tr key={product._id}>
-                    <td>
-                      <img 
-                        src={product.image} 
-                        alt={product.name}
-                          className={styles.productThumbnail}
-                      />
-                    </td>
-                    <td>{product.name}</td>
-                      <td>{getCategoryName(product.category)}</td>
-                    <td>${product.price}</td>
-                    <td>{product.stock}</td>
-                    <td>
-                        <span className={`${styles.statusBadge} ${product.isAvailable ? styles.statusActive : styles.statusInactive}`}>
-                        {product.isAvailable ? 'Disponible' : 'No disponible'}
-                      </span>
-                    </td>
-                    <td>
-                        <div className={styles.actionButtons}>
-                          <button
-                            onClick={() => handleEditProduct(product)}
-                            className={`btn btn-sm ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}
-                      >
-                        Editar
-                          </button>
-                      <button 
-                        onClick={() => handleDelete(product._id)}
-                            className={`btn btn-sm ${styles.dashboardBtn} ${styles.dashboardBtnDanger}`}
-                      >
-                        Eliminar
-                      </button>
-                        </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-        )
-      )}
-      {activeTab === 'galeria' && (
-        <GalleryAdmin />
-      )}
-      {activeTab === 'pedidos' && (
-        <OrdersAdmin />
-      )}
-      {activeTab === 'historico' && (
-        <>
-          <div className="mb-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h3 className="mb-0">KPIs de Pedidos Completados</h3>
-              <button 
-                className="btn btn-primary"
-                onClick={() => {
-                  setEditingOrder(null);
-                  setHistoryFormData({
-                    userName: '',
-                    userEmail: '',
-                    userPhone: '',
-                    userAddress: '',
-                    items: [],
-                    total: 0
-                  });
-                  setShowHistoryModal(true);
-                }}
-              >
-                <i className="bi bi-plus-circle me-2"></i>
-                Agregar Pedido Histórico
-              </button>
-            </div>
-            <div className="row g-3 mb-3">
-              <div className="col-md-4">
-                <div className="card card-body text-center bg-light border-success border-2">
-                  <h5 className="mb-1">Hoy</h5>
-                  <div className="fw-bold text-success">${suma(kpiHoy)}</div>
-                  <div className="small">{kpiHoy.length} pedidos</div>
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="card card-body text-center bg-light border-primary border-2">
-                  <h5 className="mb-1">Este mes</h5>
-                  <div className="fw-bold text-primary">${suma(kpiMes)}</div>
-                  <div className="small">{kpiMes.length} pedidos</div>
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="card card-body text-center bg-light border-dark border-2">
-                  <h5 className="mb-1">Este año</h5>
-                  <div className="fw-bold text-dark">${suma(kpiAnio)}</div>
-                  <div className="small">{kpiAnio.length} pedidos</div>
-                </div>
-              </div>
-            </div>
-            <button className="btn btn-success mb-3" onClick={() => {
-              const headers = ['Código', 'Cliente', 'Email', 'Teléfono', 'Dirección', 'Total', 'Estado', 'Fecha'];
-              const csvData = completedOrders.map(order => [
-                order.code,
-                order.userName,
-                order.userEmail,
-                order.userPhone,
-                order.userAddress,
-                order.total,
-                order.status,
-                dayjs(order.createdAt).format('YYYY-MM-DD')
-              ]);
-              const csvContent = [
-                headers.join(','),
-                ...csvData.map(row => row.join(','))
-              ].join('\n');
-              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-              const link = document.createElement('a');
-              link.href = URL.createObjectURL(blob);
-              link.download = `historico-pedidos-${dayjs().format('YYYY-MM-DD')}.csv`;
-              link.click();
-            }}>
-              <i className="bi bi-file-earmark-excel me-2"></i>
-              Exportar histórico a CSV
-            </button>
-          </div>
-          <div className="mb-4">
-            <div className="input-group">
-              <span className="input-group-text">
-                <i className="bi bi-search"></i>
-              </span>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Buscar pedidos por código, nombre o email..."
-                value={searchHistoryTerm}
-                onChange={(e) => setSearchHistoryTerm(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="table-responsive">
-            <table className="table table-striped">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Cliente</th>
-                  <th>Email</th>
-                  <th>Teléfono</th>
-                  <th>Total</th>
-                  <th>Estado</th>
-                  <th>Fecha</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loadingCompleted ? (
-                  [...Array(8)].map((_, idx) => (
-                    <tr key={idx} className="placeholder-glow">
-                      {Array.from({ length: 7 }).map((_, cidx) => (
-                        <td key={cidx}>
-                          <span className="placeholder col-10" style={{ height: 18, display: 'inline-block', borderRadius: 4 }}></span>
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : (
-                  filteredHistoryOrders.map(order => (
-                    <React.Fragment key={order._id}>
-                      <tr>
-                        <td>
-                          <button
-                            className="btn btn-link p-0"
-                            onClick={() => setExpandedOrderId(expandedOrderId === order._id ? null : order._id)}
-                            aria-expanded={expandedOrderId === order._id}
-                            aria-controls={`order-details-${order._id}`}
-                            title={expandedOrderId === order._id ? 'Ocultar detalle' : 'Ver detalle'}
-                          >
-                            <i className={`bi ${expandedOrderId === order._id ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
-                          </button>
-                          {order.code}
-                        </td>
-                      <td>{order.userName}</td>
-                      <td>{order.userEmail}</td>
-                      <td>{order.userPhone}</td>
-                      <td>${order.total}</td>
-                      <td><span className="badge bg-success">Completado</span></td>
-                      <td>{dayjs(order.createdAt).format('YYYY-MM-DD')}</td>
-                        <td>
-                          <div className="btn-group">
-                            <button
-                              className="btn btn-sm btn-warning"
-                              onClick={() => {
-                                setEditingOrder(order);
-                                setHistoryFormData({
-                                  userName: order.userName,
-                                  userEmail: order.userEmail,
-                                  userPhone: order.userPhone,
-                                  userAddress: order.userAddress,
-                                  items: order.items,
-                                  total: order.total
-                                });
-                                setShowHistoryModal(true);
-                              }}
-                            >
-                              <i className="bi bi-pencil"></i>
-                            </button>
-                            <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleDeleteHistoryOrder(order._id)}
-                            >
-                              <i className="bi bi-trash"></i>
-                            </button>
-                          </div>
-                        </td>
-                    </tr>
-                      {expandedOrderId === order._id && (
-                        <tr id={`order-details-${order._id}`}>
-                          <td colSpan="7">
-                            <div className="p-3 bg-light border rounded">
-                              <h6 className="mb-2">Detalle de productos</h6>
-                              <table className="table table-sm mb-0">
-                                <thead>
-                                  <tr>
-                                    <th>Producto</th>
-                                    <th>Cantidad</th>
-                                    <th>Precio unitario</th>
-                                    <th>Subtotal</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {order.items.map((item, idx) => (
-                                    <tr key={idx}>
-                                      <td>{item.product?.name || item.product?._id || 'Producto eliminado'}</td>
-                                      <td>{item.quantity}</td>
-                                      <td>${item.price}</td>
-                                      <td>${item.price * item.quantity}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                              {order.comments && (
-                                <div className="mt-3">
-                                  <strong>Comentarios del cliente:</strong>
-                                  <div className="alert alert-info mt-1 mb-0">{order.comments}</div>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                    </tr>
-                      )}
-                    </React.Fragment>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-      {activeTab === 'categorias' && (
-        <div className="mb-5">
-          <h3 className="mb-3">Administrar Categorías</h3>
-          {catError && <div className="alert alert-danger">{catError}</div>}
-          
-          {/* Formulario de migración masiva */}
-          <div className="card mb-4">
-            <div className="card-header">
-              <h5 className="mb-0">Migración Masiva de Productos</h5>
-            </div>
-            <div className="card-body">
-              <form onSubmit={handleMigrateProducts} className="row g-3 align-items-end">
-                <div className="col-md-5">
-                  <label className="form-label">Categoría de origen</label>
-                  <select 
-                    className={styles.dashboardSelect + ' form-select'}
-                    value={migrateFromCategory}
-                    onChange={(e) => setMigrateFromCategory(e.target.value)}
-                    required
-                  >
-                    <option value="">Seleccionar categoría...</option>
-                    {categories.map(cat => (
-                      <option key={cat._id} value={cat._id}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-5">
-                  <label className="form-label">Categoría de destino</label>
-                  <select 
-                    className={styles.dashboardSelect + ' form-select'}
-                    value={migrateToCategory}
-                    onChange={(e) => setMigrateToCategory(e.target.value)}
-                    required
-                  >
-                    <option value="">Seleccionar categoría...</option>
-                    {categories.map(cat => (
-                      <option key={cat._id} value={cat._id}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-2">
-                  <button 
-                    type="submit" 
-                    className={`btn btn-primary w-100 ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}
-                    disabled={migrating}
-                  >
-                    {migrating ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Migrando...
-                      </>
-                    ) : 'Migrar'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          {/* Formulario de creación/edición de categorías */}
-          <form className="row g-2 align-items-end mb-4" onSubmit={editCategoryId ? handleUpdateCategory : handleCreateCategory}>
-            <div className="col-md-3">
-              <label className="form-label">Nombre</label>
-              <input type="text" className={styles.dashboardInput + ' form-control'} required maxLength={32}
-                value={editCategoryId ? editCategory.name : newCategory.name}
-                onChange={e => editCategoryId ? setEditCategory({ ...editCategory, name: e.target.value }) : setNewCategory({ ...newCategory, name: e.target.value })}
-              />
-            </div>
-            <div className="col-md-3">
-              <label className="form-label">Ícono (opcional)</label>
-              <input type="text" className={styles.dashboardInput + ' form-control'} maxLength={32}
-                value={editCategoryId ? editCategory.icon : newCategory.icon}
-                onChange={e => editCategoryId ? setEditCategory({ ...editCategory, icon: e.target.value }) : setNewCategory({ ...newCategory, icon: e.target.value })}
-                placeholder="bi-book, bi-pencil..."
-              />
-            </div>
-            <div className="col-md-4">
-              <label className="form-label">Descripción</label>
-              <input type="text" className={styles.dashboardInput + ' form-control'} maxLength={64}
-                value={editCategoryId ? editCategory.description : newCategory.description}
-                onChange={e => editCategoryId ? setEditCategory({ ...editCategory, description: e.target.value }) : setNewCategory({ ...newCategory, description: e.target.value })}
-              />
-            </div>
-            <div className="col-md-2 d-grid">
-              <button type="submit" className={`btn btn-${editCategoryId ? 'warning' : 'primary'} ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}>{editCategoryId ? 'Actualizar' : 'Crear'}</button>
-              {editCategoryId && (
-                <button type="button" className={`btn btn-secondary mt-2 ${styles.dashboardBtn} ${styles.dashboardBtnOutline}`} onClick={() => { setEditCategoryId(null); setEditCategory({ name: '', icon: '', description: '' }); }}>Cancelar</button>
-              )}
-            </div>
-          </form>
-          {catLoading ? (
-            <div className="text-center my-4">Cargando categorías...</div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-bordered align-middle">
                 <thead>
                   <tr>
-                    <th>Ícono</th>
+                    <th>Imagen</th>
                     <th>Nombre</th>
-                    <th>Descripción</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {categories.map(cat => (
-                    <tr key={cat._id}>
-                      <td>{cat.icon && <i className={`bi ${cat.icon} me-2`}></i>}</td>
-                      <td>{cat.name}</td>
-                      <td>{cat.description}</td>
+                  {paginatedProducts.map(product => (
+                    <tr key={product._id}>
                       <td>
-                        <button className="btn btn-sm btn-warning me-2" onClick={() => handleEditCategory(cat)}>Editar</button>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleDeleteCategory(cat._id)}>Eliminar</button>
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className={styles.productThumbnail}
+                        />
+                      </td>
+                      <td>{product.name}</td>
+                      <td>{getCategoryName(product.category)}</td>
+                      <td>${product.price}</td>
+                      <td>{product.stock}</td>
+                      <td>
+                        <span className={`${styles.statusBadge} ${product.isAvailable ? styles.statusActive : styles.statusInactive}`}>
+                          {product.isAvailable ? 'Disponible' : 'No disponible'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className={styles.actionButtons}>
+                          <button
+                            onClick={() => handleEditProduct(product)}
+                            className={`btn btn-sm ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product._id)}
+                            className={`btn btn-sm ${styles.dashboardBtn} ${styles.dashboardBtnDanger}`}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
-                  {categories.length === 0 && (
-                    <tr><td colSpan="4" className="text-center">No hay categorías registradas.</td></tr>
-                  )}
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
+          </>
+        )
+      )}
+      {activeTab === 'pedidos' && (
+        <OrdersAdmin />
+      )}
+      {activeTab === 'dashboard' && (
+        <SalesDashboard />
+      )}
+      {activeTab === 'galeria' && (
+        <GalleryAdmin />
+      )}
+      {activeTab === 'marcas' && (
+        <BrandAdmin />
+      )}
+      {activeTab === 'campanias' && (
+        <CampaignsAdmin />
+      )}
+      {activeTab === 'banners' && (
+        <BannerAdmin />
       )}
 
       {/* Modal para crear/editar pedido histórico */}
@@ -1126,7 +850,7 @@ const AdminDashboard = () => {
                 type="text"
                 className={styles.dashboardInput + ' form-control'}
                 value={historyFormData.userName}
-                onChange={(e) => setHistoryFormData({...historyFormData, userName: e.target.value})}
+                onChange={(e) => setHistoryFormData({ ...historyFormData, userName: e.target.value })}
               />
             </div>
             <div className="col-md-6">
@@ -1135,7 +859,7 @@ const AdminDashboard = () => {
                 type="email"
                 className={styles.dashboardInput + ' form-control'}
                 value={historyFormData.userEmail}
-                onChange={(e) => setHistoryFormData({...historyFormData, userEmail: e.target.value})}
+                onChange={(e) => setHistoryFormData({ ...historyFormData, userEmail: e.target.value })}
               />
             </div>
             <div className="col-md-6">
@@ -1144,7 +868,7 @@ const AdminDashboard = () => {
                 type="tel"
                 className={styles.dashboardInput + ' form-control'}
                 value={historyFormData.userPhone}
-                onChange={(e) => setHistoryFormData({...historyFormData, userPhone: e.target.value})}
+                onChange={(e) => setHistoryFormData({ ...historyFormData, userPhone: e.target.value })}
               />
             </div>
             <div className="col-md-6">
@@ -1153,7 +877,7 @@ const AdminDashboard = () => {
                 type="text"
                 className={styles.dashboardInput + ' form-control'}
                 value={historyFormData.userAddress}
-                onChange={(e) => setHistoryFormData({...historyFormData, userAddress: e.target.value})}
+                onChange={(e) => setHistoryFormData({ ...historyFormData, userAddress: e.target.value })}
               />
             </div>
 
@@ -1161,7 +885,7 @@ const AdminDashboard = () => {
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <h6 className="mb-0">Productos del pedido</h6>
                 {!editingOrder && cart.length > 0 && (
-                  <button 
+                  <button
                     className="btn btn-sm btn-outline-primary"
                     onClick={() => setShowCartItems(!showCartItems)}
                   >
@@ -1185,10 +909,13 @@ const AdminDashboard = () => {
                           value={searchProductTerm}
                           onChange={(e) => handleSearchProducts(e.target.value)}
                         />
-                        <button 
-                          className="btn btn-outline-secondary" 
+                        <button
+                          className="btn btn-outline-secondary"
                           type="button"
-                          onClick={() => setSearchResults([])}
+                          onClick={() => {
+                            setSearchResults([]);
+                            setSearchProductTerm('');
+                          }}
                         >
                           <i className="bi bi-x"></i>
                         </button>
@@ -1202,35 +929,21 @@ const AdminDashboard = () => {
                               onClick={() => setSelectedProduct(product)}
                             >
                               <div className="d-flex justify-content-between align-items-center">
-                                <span>{product.name}</span>
+                                <div>
+                                  <span>{product.name}</span>
+                                  <small className="d-block text-muted">{product.category?.name}</small>
+                                </div>
                                 <span className="badge bg-primary">${product.price}</span>
                               </div>
                             </button>
                           ))}
                         </div>
                       )}
-                    </div>
-                    <div className="col-md-3">
-                      <div className="input-group">
-                        <span className="input-group-text">Cantidad</span>
-                        <input
-                          type="number"
-                          className={styles.dashboardInput + ' form-control'}
-                          min="1"
-                          value={productQuantity}
-                          onChange={(e) => setProductQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                        />
-                      </div>
-                    </div>
-                    <div className="col-md-3">
-                      <button
-                        className="btn btn-primary w-100"
-                        onClick={handleAddProduct}
-                        disabled={!selectedProduct}
-                      >
-                        <i className="bi bi-plus-circle me-1"></i>
-                        Agregar
-                      </button>
+                      {searchProductTerm.length >= 2 && searchResults.length === 0 && (
+                        <div className="alert alert-info mt-2 mb-0">
+                          No se encontraron productos
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1268,7 +981,7 @@ const AdminDashboard = () => {
                         </tfoot>
                       </table>
                     </div>
-                    <button 
+                    <button
                       className="btn btn-primary btn-sm"
                       onClick={handleAddCartItems}
                     >
@@ -1298,7 +1011,7 @@ const AdminDashboard = () => {
                         <td>${item.price}</td>
                         <td>${item.price * item.quantity}</td>
                         <td>
-                          <button 
+                          <button
                             className="btn btn-sm btn-danger"
                             onClick={() => {
                               const newItems = [...historyFormData.items];
@@ -1331,7 +1044,7 @@ const AdminDashboard = () => {
           <button className="btn btn-secondary" onClick={() => setShowHistoryModal(false)}>
             Cancelar
           </button>
-          <button 
+          <button
             className="btn btn-primary"
             onClick={editingOrder ? handleUpdateHistoryOrder : handleCreateHistoryOrder}
             disabled={historyFormData.items.length === 0}

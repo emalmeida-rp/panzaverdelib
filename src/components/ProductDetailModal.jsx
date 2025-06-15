@@ -1,32 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
 
-const ProductDetailModal = ({ show, onHide, product, onShare }) => {
+// Utilidad para buscar campaña y calcular precio final
+function getActiveCampaign(product, campaigns = []) {
+  if (!product || !Array.isArray(campaigns)) return null;
+  return campaigns.find(c => (c.products || []).includes(product._id) || c._id === product.campaignId || c._id === product.campaign?._id) || null;
+}
+
+function getFinalPrice(product, campaign) {
+  if (!product) return 0;
+  if (!campaign || !campaign.discountType) return product.price;
+  let finalPrice = product.price;
+  if (campaign.discountType === 'percent') {
+    finalPrice = product.price * (1 - campaign.discountValue / 100);
+  } else if (campaign.discountType === 'fixed') {
+    finalPrice = Math.max(0, product.price - campaign.discountValue);
+  }
+  return Number(finalPrice.toFixed(2));
+}
+
+const ProductDetailModal = ({ show, onHide, product, onShare, campaigns }) => {
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
 
-  // Resetear la cantidad cuando cambia el producto o se abre el modal
   useEffect(() => {
-    if (show && product) {
-      setQuantity(1);
-    }
+    if (show && product) setQuantity(1);
   }, [show, product]);
+
+  if (!product) return null;
+
+  // Centralizar lógica de campaña y precio
+  const campaign = getActiveCampaign(product, campaigns);
+  const finalPrice = getFinalPrice(product, campaign);
 
   const handleAddToCart = () => {
     if (product && quantity > 0) {
-      // Crear una copia del producto con la cantidad seleccionada
       const productWithQuantity = {
         ...product,
+        price: finalPrice,
         quantity: quantity
       };
       addToCart(productWithQuantity);
       onHide();
     }
   };
-
-  if (!product) return null;
 
   return (
     <Modal show={show} onHide={onHide} centered size="lg">
@@ -39,58 +57,47 @@ const ProductDetailModal = ({ show, onHide, product, onShare }) => {
             <img src={product.image} alt={product.name} className="img-fluid rounded product-modal-image" />
           </div>
           <div className="col-md-6">
-            <h4 className="price mb-3">${product.price}</h4>
+            {campaign && (
+              <div style={{ marginBottom: 12 }}>
+                <span style={{
+                  background: campaign.color || '#e67e22',
+                  color: '#fff',
+                  borderRadius: 8,
+                  padding: '0.4em 1em',
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  marginRight: 8,
+                  display: 'inline-block',
+                }}>
+                  {campaign.discountType === 'percent'
+                    ? `-${campaign.discountValue}% OFF`
+                    : `-$${campaign.discountValue} OFF`}
+                </span>
+                <span style={{ color: campaign.color || '#e67e22', fontWeight: 500 }}>
+                  {campaign.name || 'Campaña activa'}
+                </span>
+              </div>
+            )}
+            <h4 className="price mb-3" style={{ color: '#218838', fontWeight: 700 }}>
+              ${finalPrice.toFixed(2)}
+              {campaign && (
+                <span style={{ textDecoration: 'line-through', color: '#888', fontSize: '1rem', marginLeft: 10 }}>
+                  ${product.price.toFixed(2)}
+                </span>
+              )}
+            </h4>
             <p className="description">{product.description}</p>
             <p className="stock">
               <strong>Stock disponible:</strong> {product.stock} unidades
             </p>
-            {/* Contador de cantidad */}
-            <div className="d-flex align-items-center gap-3 mb-3">
-              <label htmlFor="quantity" className="form-label mb-0">Cantidad:</label>
-              <div className="input-group" style={{ width: '150px' }}>
-                <button
-                  className="btn btn-outline-secondary"
-                  type="button"
-                  onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                  disabled={quantity <= 1}
-                >
-                  <i className="bi bi-dash"></i>
-                </button>
-                <input
-                  type="number"
-                  className="form-control text-center"
-                  id="quantity"
-                  value={quantity}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value);
-                    if (!isNaN(value) && value > 0 && value <= product.stock) {
-                      setQuantity(value);
-                    }
-                  }}
-                  min="1"
-                  max={product.stock}
-                />
-                <button
-                  className="btn btn-outline-secondary"
-                  type="button"
-                  onClick={() => setQuantity(q => Math.min(product.stock, q + 1))}
-                  disabled={quantity >= product.stock}
-                >
-                  <i className="bi bi-plus"></i>
-                </button>
-              </div>
+            <div className="d-flex align-items-center mb-3">
+              <button className="btn btn-outline-secondary" onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
+              <span className="mx-3">{quantity}</span>
+              <button className="btn btn-outline-secondary" onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}>+</button>
             </div>
-            <div className="d-grid gap-2">
-              <Button
-                variant={product.isAvailable && product.stock > 0 ? "success" : "danger"}
-                size="lg"
-                onClick={handleAddToCart}
-                disabled={!product.isAvailable || product.stock <= 0}
-              >
-                {product.isAvailable && product.stock > 0 ? 'Agregar al carrito' : 'No disponible'}
-              </Button>
-            </div>
-            {/* Botones de compartir visuales */}
+            <button className="btn btn-primary w-100" onClick={handleAddToCart}>
+              Agregar al carrito
+            </button>
             <div className="share-section mt-4">
               <h5>Compartir producto:</h5>
               <div className="share-buttons d-flex gap-4 mt-2 justify-content-center flex-wrap">
