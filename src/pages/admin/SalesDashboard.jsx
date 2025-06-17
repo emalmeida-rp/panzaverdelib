@@ -121,6 +121,15 @@ const SalesDashboard = () => {
     setSelectedSale(sale);
     setIsViewing(true);
     setShowModal(true);
+    setSaleItems(sale.items.map(item => ({
+      product: item.product,
+      quantity: item.quantity
+    })));
+    setCustomer({
+      name: sale.customerName || '',
+      email: sale.customerEmail || '',
+      phone: sale.customerPhone || ''
+    });
   };
 
   const handleDeleteSale = async (sale) => {

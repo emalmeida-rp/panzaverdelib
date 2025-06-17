@@ -2,7 +2,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 export const fetchWithAuth = async (endpoint, options = {}) => {
   const token = localStorage.getItem('adminToken');
-  console.log('Token almacenado:', token);
+  //console.log('Token almacenado:', token);
   
   const headers = {
     'Content-Type': 'application/json',
@@ -10,14 +10,14 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
-  console.log('Headers de la petición:', headers);
+  //console.log('Headers de la petición:', headers);
 
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers,
   });
 
-  console.log('Respuesta del servidor:', response.status);
+  //console.log('Respuesta del servidor:', response.status);
 
   if (response.status === 401) {
     // Token expirado o inválido

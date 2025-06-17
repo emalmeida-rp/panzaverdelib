@@ -547,6 +547,42 @@ const AdminDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Utilidad para filtrar productos desde notificación
+  const filterProductFromNotif = (productId) => {
+    const prod = products.find(p => p._id === productId);
+    if (prod) {
+      setSearchTerm(prod.name || prod._id || '');
+      setTimeout(() => {
+        setSelectedProduct(prod);
+        setShowEditModal(true);
+      }, 200);
+    } else {
+      setSearchTerm(productId + '');
+    }
+  };
+  // Utilidad para filtrar pedidos desde notificación
+  const filterOrderFromNotif = (orderCode) => {
+    setSearchHistoryTerm(orderCode + '');
+  };
+
+  const handleNotifClick = async (notif) => {
+    if (!notif.read) {
+      await fetchWithAuth(`/notifications/${notif._id}/read`, { method: 'PATCH' });
+      setNotifications(notifications.map(n => n._id === notif._id ? { ...n, read: true } : n));
+    }
+    if (notif.type === 'stock_low') {
+      setActiveTab('productos');
+    } else if (notif.type === 'pedido') {
+      setActiveTab('pedidos');
+    }
+    setNotifDropdownOpen(false);
+  };
+
+  const handleNotifDelete = async (notifId) => {
+    await fetchWithAuth(`/notifications/${notifId}`, { method: 'DELETE' });
+    setNotifications(notifications.filter(n => n._id !== notifId));
+  };
+
   if (loading && activeTab === 'productos') return (
     <div className="container mt-4">
       <div className="table-responsive">
@@ -609,28 +645,34 @@ const AdminDashboard = () => {
                       <div
                         key={notif._id}
                         className={`${styles.notifItem} ${notif.read ? styles.read : ''}`}
-                        onClick={() => handleMarkAsRead(notif._id)}
-                        style={{ cursor: 'pointer' }}
+                        style={{ cursor: 'pointer', position: 'relative' }}
                       >
-                        <div className={styles.notifIcon}>
+                        <div className={styles.notifIcon} onClick={() => handleNotifClick(notif)}>
                           {notif.type === 'stock_low' ? (
                             <FaBoxOpen color="#e67e22" />
                           ) : (
                             <FaClipboardList color="#2980b9" />
                           )}
                         </div>
-                        <div className={styles.notifContent}>
+                        <div className={styles.notifContent} onClick={() => handleNotifClick(notif)}>
                           <p>{notif.message}</p>
                           <small>{dayjs(notif.createdAt).fromNow()}</small>
-                          {notif.link && (
-                            <a href={notif.link} className={styles.notifLink} onClick={e => e.stopPropagation()}>
-                              Ver producto
-                            </a>
+                          {/* Link visual, pero la acción es el click en la notificación */}
+                          {notif.type === 'stock_low' && (
+                            <span className={styles.notifLink}>Ver producto</span>
+                          )}
+                          {notif.type === 'pedido' && (
+                            <span className={styles.notifLink}>Ver pedido</span>
                           )}
                         </div>
-                        {!notif.read && (
-                          <i className="fas fa-check-circle"></i>
+                        {notif.read && (
+                          <span style={{ color: 'green', fontSize: 18, marginLeft: 4 }} title="Leída">✔️</span>
                         )}
+                        <button
+                          onClick={e => { e.stopPropagation(); handleNotifDelete(notif._id); }}
+                          style={{ background: 'none', border: 'none', color: 'red', fontSize: 18, cursor: 'pointer', marginLeft: 8 }}
+                          title="Eliminar"
+                        >🗑️</button>
                       </div>
                     ))
                   )}

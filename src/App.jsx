@@ -16,6 +16,8 @@ import { AlertProvider } from './context/AlertContext';
 import AlertToast from './components/AlertToast';
 import OrderForm from './pages/OrderForm';
 import OrderConfirmation from './pages/OrderConfirmation';
+import ProductDetailPlaceholder from './pages/admin/ProductDetailPlaceholder';
+import OrderDetailPlaceholder from './pages/admin/OrderDetailPlaceholder';
 import './App.css';
 
 function App() {
@@ -55,6 +57,22 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <ProductForm />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/products/:id" 
+                  element={
+                    <ProtectedRoute>
+                      <ProductDetailPlaceholder />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/orders/:code" 
+                  element={
+                    <ProtectedRoute>
+                      <OrderDetailPlaceholder />
                     </ProtectedRoute>
                   } 
                 />
