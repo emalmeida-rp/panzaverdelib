@@ -61,7 +61,14 @@ const Navbar = () => {
               </Link>
               <ul className={`dropdown-menu ${styles.categoryDropdown} ${showCategories ? 'show' : ''}`}>
                 <li>
-                  <button className={`${styles.categoryBtn} ${!categoryParam ? styles.activeCategory : ''}`} onClick={() => navigate('/productos')}>
+                  <button
+                    className={`${styles.categoryBtn} ${!categoryParam ? styles.activeCategory : ''}`}
+                    onClick={() => {
+                      navigate('/productos');
+                      setShowCategories(false);
+                      setIsNavCollapsed(true);
+                    }}
+                  >
                     Todos
                   </button>
                 </li>
@@ -72,7 +79,14 @@ const Navbar = () => {
                 ) : (
                   categories.map(cat => (
                     <li key={cat._id}>
-                      <button className={`${styles.categoryBtn} ${categoryParam === cat._id ? styles.activeCategory : ''}`} onClick={() => navigate(`/productos?category=${cat._id}`)}>
+                      <button
+                        className={`${styles.categoryBtn} ${categoryParam === cat._id ? styles.activeCategory : ''}`}
+                        onClick={() => {
+                          navigate(`/productos?category=${cat._id}`);
+                          setShowCategories(false);
+                          setIsNavCollapsed(true);
+                        }}
+                      >
                         {cat.icon ? (
                           cat.icon.startsWith('bi-') ? (
                             <i className={`bi ${cat.icon} me-1`}></i>
