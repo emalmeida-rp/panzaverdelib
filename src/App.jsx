@@ -18,6 +18,7 @@ import OrderForm from './pages/OrderForm';
 import OrderConfirmation from './pages/OrderConfirmation';
 import ProductDetailPlaceholder from './pages/admin/ProductDetailPlaceholder';
 import OrderDetailPlaceholder from './pages/admin/OrderDetailPlaceholder';
+import SocialWidget from './components/SocialWidget';
 import './App.css';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <div className="App">
             <Navbar />
             <AlertToast />
+            <SocialWidget />
             <main className="main-content">
               <Routes>
                 <Route path="/" element={<Home />} />
