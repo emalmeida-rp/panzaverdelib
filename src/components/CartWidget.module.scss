@@ -1,0 +1,279 @@
+// src/components/CartWidget.module.scss
+
+// Variables para un fácil mantenimiento
+$fab-size: 64px;
+$fab-icon-size: 2rem;
+$dropdown-width: 350px;
+// Breakpoints ajustados
+$mobile-breakpoint: 767px;
+$tablet-breakpoint: 1024px;
+
+// --- ESTRATEGIA MOBILE-FIRST ---
+
+// --- Contenedor (BASE = MÓVIL CENTRADO) ---
+.cartWidgetFloat {
+  position: fixed;
+  z-index: 1050;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: all 0.3s ease;
+}
+
+// --- Estilo del botón del carrito ---
+.cartButton {
+  position: relative;
+  width: $fab-size;
+  height: $fab-size;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6fbf73 0%, #8bc34a 100%);
+  color: white;
+  font-size: $fab-icon-size;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  }
+}
+
+// --- Menú Desplegable (BASE = MÓVIL CENTRADO) ---
+.dropdownMenu {
+  position: fixed;
+  bottom: calc(#{$fab-size} + 30px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 95vw;
+  max-width: 400px;
+  background-color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0s 0.2s;
+
+  &.show {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.2s ease, visibility 0s 0s;
+  }
+}
+
+// --- AJUSTES PARA TABLET Y PANTALLAS MÁS GRANDES ---
+@media (min-width: #{$mobile-breakpoint + 1}) { // 768px en adelante
+  .cartWidgetFloat {
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    transform: none; // Reseteamos la transformación
+  }
+
+  .dropdownMenu {
+    position: absolute; // Relativo al botón nuevamente
+    bottom: calc(#{$fab-size} + 12px);
+    left: auto;
+    right: 0;
+    transform: translateY(10px); // Animación vertical
+    width: $dropdown-width; // Ancho fijo
+    
+    &.show {
+      transform: translateY(0);
+    }
+  }
+}
+
+// --- AJUSTES PARA LAPTOPS Y PANTALLAS MUY GRANDES ---
+@media (min-width: #{$tablet-breakpoint + 1}) { // 1025px en adelante
+  .cartWidgetFloat {
+    right: 40px;
+    bottom: 40px;
+  }
+}
+
+// --- Estilos internos del contenido del dropdown ---
+.dropdownHeader {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #28a745;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #eee;
+  text-align: center;
+}
+
+.emptyCartText {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #6c757d;
+}
+
+.cartItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+
+  img {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  .itemInfo {
+    flex-grow: 1;
+    font-weight: 500;
+  }
+
+  .itemQuantity {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .itemPrice {
+    font-weight: 600;
+    min-width: 50px;
+    text-align: right;
+  }
+}
+
+.quantityButton, .removeButton {
+  background: #f1f3f5;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: #dee2e6;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.removeButton {
+  background-color: #fff1f3;
+  color: #e03131;
+  &:hover {
+    background-color: #ffe3e3;
+  }
+}
+
+.cartFooter {
+  border-top: 1px solid #eee;
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.totalSection {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.actionButton {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &.clear {
+    background-color: #fae8e8;
+    color: #d94848;
+    margin-bottom: 0.5rem;
+    &:hover {
+      background-color: #f5caca;
+    }
+  }
+
+  &.confirm {
+    background-color: #28a745;
+    color: white;
+    &:hover {
+      background-color: #218838;
+    }
+    &:disabled {
+      background-color: #a5d6a7;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Estilos para el seguimiento de pedidos
+.orderStatusList {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+
+  strong {
+    display: block;
+    margin-bottom: 0;
+  }
+  
+  ul {
+    padding-left: 1rem;
+    margin-bottom: 0;
+  }
+}
+
+.orderStatusItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  padding: 0.25rem 0;
+  
+  .statusIcon {
+    font-size: 1.1em;
+  }
+  .statusText {
+    font-weight: 500;
+  }
+  .statusCode {
+    font-weight: 600;
+    color: #343a40;
+  }
+
+  // Modificadores de estado para alta accesibilidad
+  &.pending {
+    .statusIcon, .statusText { color: #b95000; }
+  }
+  &.processing {
+    .statusIcon, .statusText { color: #005a9c; }
+  }
+  &.shipping {
+    .statusIcon, .statusText { color: #1e6b48; }
+  }
+  &.completed {
+    .statusIcon, .statusText { color: #155724; }
+  }
+  &.cancelled {
+    .statusIcon, .statusText { color: #721c24; }
+  }
+  &.unknown {
+    .statusIcon, .statusText { color: #5a6268; }
+  }
+} 

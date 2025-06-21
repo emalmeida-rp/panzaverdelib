@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import './CartWidget.css';
+import styles from './CartWidget.module.scss';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useQuery } from '@tanstack/react-query';
@@ -40,26 +40,26 @@ const CartWidget = () => {
   const { data: orderStatusList = [] } = useQuery({
     queryKey: ['orderStatusList', localStorage.getItem('orderCodes')],
     queryFn: async () => {
-      let orderCodes = [];
-      try {
-        orderCodes = JSON.parse(localStorage.getItem('orderCodes')) || [];
-      } catch {
-        orderCodes = [];
-      }
+      const orderCodesStr = localStorage.getItem('orderCodes');
+      const orderCodes = orderCodesStr ? JSON.parse(orderCodesStr) : [];
       if (orderCodes.length === 0) return [];
+
       const results = await Promise.all(orderCodes.map(async code => {
-        const res = await fetch(`${API_URL}/orders/code/${code}`);
-        if (res.status === 404) {
-          // Eliminar el código si el pedido fue eliminado
-          let codes = orderCodes.filter(c => c !== code);
-          localStorage.setItem('orderCodes', JSON.stringify(codes));
-          if (localStorage.getItem('lastOrderCode') === code) {
-            localStorage.removeItem('lastOrderCode');
+        try {
+          const res = await fetch(`${API_URL}/orders/code/${code}`);
+          if (!res.ok) {
+            if (res.status === 404) {
+              const updatedCodes = orderCodes.filter(c => c !== code);
+              localStorage.setItem('orderCodes', JSON.stringify(updatedCodes));
+            }
+            return null;
           }
+          const data = await res.json();
+          return data && data.status ? { code, status: data.status } : null;
+        } catch (error) {
+          console.error(`Error fetching status for order ${code}:`, error);
           return null;
         }
-        const data = await res.json();
-        return data && data.status ? { code, status: data.status } : null;
       }));
       return results.filter(Boolean);
     },
@@ -202,131 +202,115 @@ const CartWidget = () => {
     }
   };
 
-  // Función para obtener color e ícono según estado
   const getOrderStatusVisual = (status) => {
     switch (status) {
       case 'pendiente':
-        return { color: 'text-warning', icon: 'bi-clock', text: 'Pendiente de Pago' };
+        return { styleKey: 'pending', icon: 'bi-clock', text: 'Pendiente de Pago' };
       case 'procesando':
-        return { color: 'text-info', icon: 'bi-cash-coin', text: 'Pago Confirmado' };
+        return { styleKey: 'processing', icon: 'bi-cash-coin', text: 'Pago Confirmado' };
       case 'enviado':
-        return { color: 'text-success', icon: 'bi-truck', text: 'En Preparación' };
+        return { styleKey: 'shipping', icon: 'bi-truck', text: 'En Preparación' };
       case 'completado':
-        return { color: 'text-success', icon: 'bi-check-circle', text: 'Entregado' };
+        return { styleKey: 'completed', icon: 'bi-check-circle', text: 'Entregado' };
       case 'cancelado':
-        return { color: 'text-danger', icon: 'bi-x-circle', text: 'Cancelado' };
+        return { styleKey: 'cancelled', icon: 'bi-x-circle', text: 'Cancelado' };
       default:
-        return { color: 'text-secondary', icon: 'bi-question-circle', text: 'Desconocido' };
+        return { styleKey: 'unknown', icon: 'bi-question-circle', text: 'Desconocido' };
     }
   };
 
   // Flotante en escritorio y mobile
   return (
     <>
-      <div
-        className="cart-widget-float"
-        style={{
-          position: 'fixed',
-          right: 16,
-          left: 'auto',
-          bottom: 16,
-          zIndex: 1050
-        }}
-        onClick={handleDropdown}
-        ref={dropdownRef}
-      >
-        <button
-          className="btn btn-success rounded-circle shadow-lg position-relative"
-          style={{ width: 64, height: 64, fontSize: '2rem' }}
-        >
+      <div className={styles.cartWidgetFloat} ref={dropdownRef}>
+        <button className={styles.cartButton} onClick={handleDropdown}>
           <i className="bi bi-cart"></i>
           {cart.length > 0 && (
-            <span className="badge bg-danger position-absolute top-0 start-100 translate-middle">
+            <span className="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-pill">
               {cart.reduce((acc, item) => acc + item.quantity, 0)}
             </span>
           )}
         </button>
         {/* Dropdown flotante */}
-        {showDropdown && (
-          <div className="dropdown-menu show p-3" style={{ minWidth: 320, right: 0, left: 'auto', position: 'absolute', bottom: 80 }}>
-            <h6 className="dropdown-header">Carrito</h6>
-            {/* Estado del pedido */}
-            {orderStatusList.length > 0 && (
-              <div className="alert alert-info py-2 px-3 mb-2">
-                <strong>Seguimiento de pedidos:</strong>
-                <ul className="mb-0 ps-3">
-                  {orderStatusList.map((order, idx) => {
-                    const visual = getOrderStatusVisual(order.status);
-                    return (
-                      <li key={order.code} className="mb-1 d-flex align-items-center gap-2">
-                        <span className="fw-bold">{order.code}</span>
-                        <i className={`bi ${visual.icon} ${visual.color} ms-1`} 
-                           style={{ fontSize: '1.1em', textShadow: '0 1px 4px rgba(0,0,0,0.18), 0 0px 1px #fff', filter: 'drop-shadow(0 1px 2px #fff)' }}
-                           aria-label={order.status}
-                        ></i>
-                        <span className={`fw-bold text-capitalize ${visual.color}`}
-                              style={{ textShadow: '0 0 2px #000, 0 1px 2px #000' }}>
-                          {visual.text}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-            {cart.length === 0 ? (
-              <span className="dropdown-item-text">El carrito está vacío</span>
-            ) : (
-              <>
-                {cart.map((item, idx) => (
-                  <div key={idx} className="d-flex align-items-center mb-2">
-                    <img src={item.image} alt={item.name} width={40} height={40} className="me-2 rounded" />
-                    <div className="flex-grow-1">
-                      <div className="fw-bold">{item.name}</div>
-                      <div className="d-flex align-items-center">
-                        <button 
-                          className="btn btn-sm btn-outline-secondary me-1" 
-                          onClick={e => { e.stopPropagation(); updateQuantity(item._id, item.quantity - 1, item.stock); }} 
-                          disabled={item.quantity === 1}
+        <div className={`${styles.dropdownMenu} ${showDropdown ? styles.show : ''}`}>
+          <div className={styles.dropdownHeader}>Carrito de Compras</div>
+          {/* Estado del pedido */}
+          {orderStatusList.length > 0 && (
+            <div className={styles.orderStatusList}>
+              <strong>Seguimiento de pedidos:</strong>
+              <ul>
+                {orderStatusList.map((order) => {
+                  const visual = getOrderStatusVisual(order.status);
+                  return (
+                    <li key={order.code} className={`${styles.orderStatusItem} ${styles[visual.styleKey]}`}>
+                      <i className={`${styles.statusIcon} bi ${visual.icon}`} />
+                      <span className={styles.statusCode}>{order.code}</span>
+                      <span className={styles.statusText}>{visual.text}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+          {cart.length === 0 ? (
+            <div className={styles.emptyCartText}>Tu carrito está vacío</div>
+          ) : (
+            <>
+              <div>
+                {cart.map((item) => (
+                  <div key={item._id} className={styles.cartItem}>
+                    <img src={item.image} alt={item.name} />
+                    <div className={styles.itemInfo}>
+                      <div>{item.name}</div>
+                      <div className={styles.itemQuantity}>
+                        <button
+                          className={styles.quantityButton}
+                          onClick={(e) => { e.stopPropagation(); updateQuantity(item._id, item.quantity - 1); }}
+                          disabled={item.quantity <= 1}
                         >
                           -
                         </button>
                         <span>{item.quantity}</span>
-                        <button 
-                          className="btn btn-sm btn-outline-secondary ms-1" 
-                          onClick={e => { e.stopPropagation(); updateQuantity(item._id, item.quantity + 1, item.stock); }}
+                        <button
+                          className={styles.quantityButton}
+                          onClick={(e) => { e.stopPropagation(); updateQuantity(item._id, item.quantity + 1, item.stock); }}
                           disabled={item.quantity >= item.stock}
                         >
                           +
                         </button>
                       </div>
                     </div>
-                    <span className="ms-2">${item.price * item.quantity}</span>
-                    <button className="btn btn-sm btn-danger ms-2" onClick={e => { e.stopPropagation(); removeFromCart(item._id); }}>
+                    <div className={styles.itemPrice}>
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </div>
+                    <button className={styles.removeButton} onClick={(e) => { e.stopPropagation(); removeFromCart(item._id); }}>
                       <i className="bi bi-trash"></i>
                     </button>
                   </div>
                 ))}
-                <div className="dropdown-divider"></div>
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <span className="fw-bold">Total:</span>
-                  <span className="fw-bold">${getTotal()}</span>
+              </div>
+              <div className={styles.cartFooter}>
+                <div className={styles.totalSection}>
+                  <span>Total:</span>
+                  <span>${getTotal()}</span>
                 </div>
-                <button className="btn btn-danger w-100 mb-2" onClick={e => { e.stopPropagation(); clearCart(); }}>
-                  Vaciar carrito
+                <button
+                  className={`${styles.actionButton} ${styles.clear}`}
+                  onClick={(e) => { e.stopPropagation(); clearCart(); }}
+                >
+                  Vaciar Carrito
                 </button>
                 <button
-                  type="button"
-                  className="btn btn-success no-tilt"
-                  disabled={cart.length === 0}
+                  className={`${styles.actionButton} ${styles.confirm}`}
                   onClick={handleConfirmPurchase}
+                  disabled={cart.length === 0}
                 >
-                  Confirmar compra
+                  Confirmar Compra
                 </button>
-              </>
-            )}
-          </div>
-        )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
       {/* Modal de confirmación de compra */}
       {showModal && (
