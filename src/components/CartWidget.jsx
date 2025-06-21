@@ -5,6 +5,7 @@ import styles from './CartWidget.module.scss';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useQuery } from '@tanstack/react-query';
+import OrderDetailModal from './OrderDetailModal';
 
 const MySwal = withReactContent(Swal);
 
@@ -15,6 +16,10 @@ const CartWidget = () => {
   const dropdownRef = useRef(null);
   const API_URL = import.meta.env.VITE_API_URL;
   const [orderComments, setOrderComments] = useState('');
+
+  // Estados para el modal de detalle de pedido
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   // Detectar si es móvil
   const isMobile = window.innerWidth < 992;
@@ -55,7 +60,7 @@ const CartWidget = () => {
             return null;
           }
           const data = await res.json();
-          return data && data.status ? { code, status: data.status } : null;
+          return data; // Devolver el objeto de pedido completo
         } catch (error) {
           console.error(`Error fetching status for order ${code}:`, error);
           return null;
@@ -65,6 +70,11 @@ const CartWidget = () => {
     },
     refetchInterval: 240000 // refresca cada 4 minutos
   });
+
+  const handleOpenOrderDetail = (order) => {
+    setSelectedOrder(order);
+    setShowDetailModal(true);
+  };
 
   const handleConfirmPurchase = async () => {
     try {
@@ -205,170 +215,153 @@ const CartWidget = () => {
   const getOrderStatusVisual = (status) => {
     switch (status) {
       case 'pendiente':
-        return { styleKey: 'pending', icon: 'bi-clock', text: 'Pendiente de Pago' };
+        return { text: 'Pendiente de pago', color: '#f39c12', icon: 'bi-hourglass-split' };
       case 'procesando':
-        return { styleKey: 'processing', icon: 'bi-cash-coin', text: 'Pago Confirmado' };
+        return { text: 'Pago confirmado', color: '#3498db', icon: 'bi-patch-check-fill' };
+      case 'en_preparacion':
+        return { text: 'En preparación', color: '#8e44ad', icon: 'bi-box-seam' };
       case 'enviado':
-        return { styleKey: 'shipping', icon: 'bi-truck', text: 'En Preparación' };
+        return { text: 'Listo para retirar', color: '#1abc9c', icon: 'bi-truck' };
       case 'completado':
-        return { styleKey: 'completed', icon: 'bi-check-circle', text: 'Entregado' };
+        return { text: 'Entregado', color: '#2ecc71', icon: 'bi-check2-circle' };
       case 'cancelado':
-        return { styleKey: 'cancelled', icon: 'bi-x-circle', text: 'Cancelado' };
+        return { text: 'Cancelado', color: '#e74c3c', icon: 'bi-x-circle' };
       default:
-        return { styleKey: 'unknown', icon: 'bi-question-circle', text: 'Desconocido' };
+        return { text: 'Desconocido', color: '#7f8c8d', icon: 'bi-question-circle' };
     }
   };
 
-  // Flotante en escritorio y mobile
+  const hasContent = cart.length > 0 || orderStatusList.length > 0;
+  const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
   return (
     <>
-      <div className={styles.cartWidgetFloat} ref={dropdownRef}>
+      <div className={styles.cartWidgetContainer} ref={dropdownRef}>
         <button className={styles.cartButton} onClick={handleDropdown}>
-          <i className="bi bi-cart"></i>
-          {cart.length > 0 && (
+          <i className="bi bi-cart3"></i>
+          {cartItemCount > 0 && (
             <span className="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-pill">
-              {cart.reduce((acc, item) => acc + item.quantity, 0)}
+              {cartItemCount}
             </span>
           )}
         </button>
-        {/* Dropdown flotante */}
-        <div className={`${styles.dropdownMenu} ${showDropdown ? styles.show : ''}`}>
-          <div className={styles.dropdownHeader}>Carrito de Compras</div>
-          {/* Estado del pedido */}
-          {orderStatusList.length > 0 && (
-            <div className={styles.orderStatusList}>
-              <strong>Seguimiento de pedidos:</strong>
-              <ul>
-                {orderStatusList.map((order) => {
-                  const visual = getOrderStatusVisual(order.status);
-                  return (
-                    <li key={order.code} className={`${styles.orderStatusItem} ${styles[visual.styleKey]}`}>
-                      <i className={`${styles.statusIcon} bi ${visual.icon}`} />
-                      <span className={styles.statusCode}>{order.code}</span>
-                      <span className={styles.statusText}>{visual.text}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-          {cart.length === 0 ? (
-            <div className={styles.emptyCartText}>Tu carrito está vacío</div>
-          ) : (
-            <>
-              <div>
-                {cart.map((item) => (
-                  <div key={item._id} className={styles.cartItem}>
-                    <img src={item.image} alt={item.name} />
-                    <div className={styles.itemInfo}>
-                      <div>{item.name}</div>
-                      <div className={styles.itemQuantity}>
+
+        {showDropdown && (
+          <div className={`${styles.dropdownMenu} ${showDropdown ? styles.show : ''}`}>
+            {hasContent ? (
+              <>
+                {/* Sección del carrito */}
+                <div className={styles.cartContent}>
+                  <h6 className={styles.dropdownSectionTitle}>
+                    <i className="bi bi-cart-check me-2"></i>Mi Carrito
+                  </h6>
+                  {cart.length > 0 ? (
+                    <>
+                      {cart.map((item) => (
+                        <div key={item._id} className={styles.cartItem}>
+                          <img src={item.image} alt={item.name} />
+                          <div className={styles.itemInfo}>
+                            <span>{item.name}</span>
+                            <div className={styles.itemQuantity}>
+                              <button
+                                className={styles.quantityButton}
+                                onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                                disabled={item.quantity <= 1}
+                              >
+                                -
+                              </button>
+                              <span>{item.quantity}</span>
+                              <button
+                                className={styles.quantityButton}
+                                onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                          <div className={styles.itemPrice}>
+                            ${(item.price * item.quantity).toFixed(2)}
+                          </div>
+                          <button
+                            className={styles.removeButton}
+                            onClick={() => removeFromCart(item._id)}
+                          >
+                            <i className="bi bi-trash3-fill"></i>
+                          </button>
+                        </div>
+                      ))}
+                      <div className={styles.cartFooter}>
+                        <div className={styles.totalSection}>
+                          <span>Total:</span>
+                          <span>${getTotal()}</span>
+                        </div>
                         <button
-                          className={styles.quantityButton}
-                          onClick={(e) => { e.stopPropagation(); updateQuantity(item._id, item.quantity - 1); }}
-                          disabled={item.quantity <= 1}
+                          className={styles.actionButton}
+                          onClick={handleConfirmPurchase}
                         >
-                          -
+                          Confirmar Compra
                         </button>
-                        <span>{item.quantity}</span>
                         <button
-                          className={styles.quantityButton}
-                          onClick={(e) => { e.stopPropagation(); updateQuantity(item._id, item.quantity + 1, item.stock); }}
-                          disabled={item.quantity >= item.stock}
+                          className={`${styles.actionButton} ${styles.clear}`}
+                          onClick={clearCart}
                         >
-                          +
+                          Vaciar Carrito
                         </button>
                       </div>
-                    </div>
-                    <div className={styles.itemPrice}>
-                      ${(item.price * item.quantity).toFixed(2)}
-                    </div>
-                    <button className={styles.removeButton} onClick={(e) => { e.stopPropagation(); removeFromCart(item._id); }}>
-                      <i className="bi bi-trash"></i>
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className={styles.cartFooter}>
-                <div className={styles.totalSection}>
-                  <span>Total:</span>
-                  <span>${getTotal()}</span>
+                    </>
+                  ) : (
+                    <p className={styles.emptyCartText}>Tu carrito está vacío.</p>
+                  )}
                 </div>
-                <button
-                  className={`${styles.actionButton} ${styles.clear}`}
-                  onClick={(e) => { e.stopPropagation(); clearCart(); }}
-                >
-                  Vaciar Carrito
-                </button>
-                <button
-                  className={`${styles.actionButton} ${styles.confirm}`}
-                  onClick={handleConfirmPurchase}
-                  disabled={cart.length === 0}
-                >
-                  Confirmar Compra
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-      {/* Modal de confirmación de compra */}
-      {showModal && (
-        <div className="modal fade show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Confirmar compra</h5>
-                <button type="button" className="btn-close" onClick={handleModal}></button>
-              </div>
-              <div className="modal-body">
-                <p>¿Deseas confirmar la compra?</p>
-                <ul className="list-group mb-3">
-                  {cart.map((item, idx) => (
-                    <li key={idx} className="list-group-item d-flex justify-content-between align-items-center">
-                      <span>{item.name} x{item.quantity}</span>
-                      <span>${item.price * item.quantity}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="text-end mb-3">
-                  <strong>Total: ${getTotal()}</strong>
-                </div>
-                <div className="mb-3">
-                  <label htmlFor="orderComments" className="form-label">
-                    <i className="bi bi-chat-left-text me-2"></i>
-                    Comentarios para tu pedido
-                  </label>
-                  <textarea
-                    className="form-control"
-                    id="orderComments"
-                    rows="3"
-                    placeholder="Agrega cualquier comentario o instrucción especial para tu pedido..."
-                    value={orderComments}
-                    onChange={(e) => setOrderComments(e.target.value)}
-                  ></textarea>
-                  <div className="form-text">
-                    Por ejemplo: "Entregar después de las 18hs" o "Llamar antes de entregar"
-                  </div>
-                </div>
-                <div className="d-flex align-items-center gap-3 mt-4" style={{ minHeight: 100 }}>
-                  <div style={{ minWidth: 100 }}>
-                    <img src="https://placehold.co/100x100?text=QR" alt="QR de pago" className="img-fluid rounded shadow" />
-                  </div>
-                  <div className="flex-grow-1 small text-start">
-                    Te facilitamos el código QR para que puedas adelantar el pago, o bien aguardá a que te contactemos para avanzar con el pedido.<br/>
-                    <strong>¡Muchas gracias por elegirnos!</strong>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer d-flex gap-2">
-                <button type="button" className="btn btn-secondary" onClick={handleModal}>Cerrar</button>
-                <button type="button" className="btn btn-success" disabled>Confirmar compra</button>
-              </div>
-            </div>
+
+                {/* Sección de seguimiento de pedidos */}
+                {orderStatusList.length > 0 && (
+                  <>
+                    <hr className={styles.divider} />
+                    <h6 className={styles.dropdownSectionTitle}>
+                      <i className="bi bi-receipt-cutoff me-2"></i>Seguimiento de pedidos
+                    </h6>
+                    <ul className={styles.statusList}>
+                      {orderStatusList.map((order, index) => {
+                        if (!order || !order.status) return null;
+                        const visual = getOrderStatusVisual(order.status);
+                        return (
+                          <li key={index} className={styles.statusItem}>
+                            <button onClick={() => handleOpenOrderDetail(order)} className={styles.statusButton}>
+                              <span className={styles.statusIcon} style={{ color: visual.color }}>
+                                <i className={visual.icon}></i>
+                              </span>
+                              <div className={styles.statusDetails}>
+                                <span className={styles.statusCode}>Pedido #{order.code}</span>
+                                <span className={styles.statusText} style={{ color: visual.color }}>
+                                  {visual.text}
+                                </span>
+                              </div>
+                              <span className={styles.statusChevron}>
+                                <i className="bi bi-chevron-right"></i>
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
+                )}
+              </>
+            ) : (
+              <p className={styles.emptyCartText}>
+                Tu carrito está vacío y no tienes pedidos para seguir.
+              </p>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      <OrderDetailModal
+        show={showDetailModal}
+        onHide={() => setShowDetailModal(false)}
+        order={selectedOrder}
+      />
     </>
   );
 };

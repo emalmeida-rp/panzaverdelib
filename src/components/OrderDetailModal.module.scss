@@ -1,0 +1,138 @@
+.modalTitle {
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.orderCode {
+  color: #2980b9;
+  font-family: monospace;
+}
+
+.modalBody {
+  padding: 1.5rem 2rem;
+  background-color: #f9fafb;
+}
+
+.statusSection {
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.4em 0.8em;
+  font-size: 0.9em;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 1rem;
+  color: #fff;
+  text-transform: capitalize;
+
+  &.pendiente { background-color: #f39c12; }
+  &.procesando { background-color: #3498db; }
+  &.en_preparacion { background-color: #8e44ad; }
+  &.enviado { background-color: #1abc9c; }
+  &.completado { background-color: #2ecc71; }
+  &.cancelado { background-color: #e74c3c; }
+}
+
+.sectionTitle {
+  font-weight: 600;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 0.5rem;
+  color: #495057;
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 0.5rem;
+}
+
+.itemDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.itemName {
+  font-weight: 600;
+  color: #343a40;
+}
+
+.itemQuantity {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.itemPrice {
+  font-weight: 700;
+  color: #28a745;
+  font-size: 1.1rem;
+}
+
+.totalSection {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 2px solid #e9ecef;
+  font-size: 1.25rem;
+}
+
+.totalAmount {
+  font-weight: 700;
+  color: #212529;
+}
+
+.qrSection {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: #fff;
+  border: 1px dashed #2980b9;
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+.qrCodeContainer {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.qrImage {
+  max-width: 200px;
+  height: auto;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+}
+
+.qrInstructions {
+  font-size: 0.95rem;
+  color: #6c757d;
+  max-width: 450px;
+  margin: 0 auto;
+} 
