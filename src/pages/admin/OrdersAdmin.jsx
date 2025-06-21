@@ -20,7 +20,6 @@ const OrdersAdmin = () => {
       if (!response.ok) throw new Error('Error al cargar los pedidos');
       return response.json();
     },
-    refetchInterval: 60000 // refresca cada 1 minuto
   });
 
   const handleStatusChange = async (orderId, newStatus) => {

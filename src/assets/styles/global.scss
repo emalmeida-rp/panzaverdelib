@@ -575,7 +575,7 @@ main {
 }
 
 // Centrar ícono de carrito flotante y dropdown
-.fab-cart, .dropdown-menu {
+.fab-cart{
   left: 50% !important;
   transform: translateX(-50%) !important;
   right: auto !important;

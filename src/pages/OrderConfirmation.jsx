@@ -12,15 +12,18 @@ const OrderConfirmation = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await fetch(`${API_URL}api/orders/code/${code}`);
+        const response = await fetch(`${API_URL}/api/orders/code/${code}`);
         if (response.ok) {
           const data = await response.json();
           setOrder(data);
         } else {
-          setError('Pedido no encontrado');
+          const errorData = await response.json();
+          console.error('Error fetching order:', response.status, errorData);
+          setError(`Error: ${errorData.message || 'Pedido no encontrado'}`);
         }
       } catch (error) {
-        setError('Error al cargar el pedido');
+        console.error('Error al cargar el pedido:', error);
+        setError('Error al cargar el pedido. Revisa la consola para más detalles.');
       } finally {
         setLoading(false);
       }
