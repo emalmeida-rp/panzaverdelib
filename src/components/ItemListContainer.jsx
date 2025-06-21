@@ -283,59 +283,59 @@ const ItemListContainer = () => {
         <p className="lead">Desde aquí podrás autogestionar tus compras de artículos de librería o insumos escolares. ¡Ofrecemos distintos medios de pago, facilidad y precios imbatibles!</p>
       </header>
       <div className="container">
-        <div className="mb-4" data-aos="fade-up">
-          <div className="input-group search-container">
-            <span className="input-group-text search-icon">
-              <i className="bi bi-search"></i>
-            </span>
+        <div className={styles.searchBarContainer} data-aos="fade-up">
+          <div className={styles.searchInputGroup}>
+            <i className={`bi bi-search ${styles.searchIcon}`}></i>
             <input
               type="text"
-              className="form-control search-input"
+              className={styles.searchInput}
               placeholder="Buscar productos por nombre o descripción..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             {searchTerm && (
               <button 
-                className="btn btn-outline-secondary clear-search" 
+                className={styles.clearButton}
                 onClick={() => setSearchTerm('')}
                 type="button"
+                aria-label="Limpiar búsqueda"
               >
                 <i className="bi bi-x-lg"></i>
               </button>
             )}
           </div>
-          
-          {/* Filtros de categoría */}
-          <div className={styles.categoryFilterBar}>
-            <button className={`${styles.categoryFilterBtn} ${!selectedCategory ? 'active' : ''}`} onClick={() => setSelectedCategory(null)}>
-              Todos
-            </button>
-            {categories.map(cat => (
-              <button
-                key={cat._id}
-                className={`${styles.categoryFilterBtn} ${selectedCategory === cat._id ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(cat._id)}
-              >
-                {cat.icon ? (
-                  cat.icon.startsWith('bi-') ? (
-                    <i className={`bi ${cat.icon} me-1`}></i>
-                  ) : (
-                    <span className="me-1">{cat.icon}</span>
-                  )
-                ) : null}
-                {cat.name}
-              </button>
-            ))}
-          </div>
-
-          {showNoResults && (
-            <div className="alert alert-info mt-3 text-center" role="alert" data-aos="fade-up">
-              <i className="bi bi-emoji-frown me-2"></i>
-              No se encontraron productos que coincidan con tu búsqueda
-            </div>
-          )}
         </div>
+          
+        {/* Filtros de categoría */}
+        <div className={styles.categoryFilterBar}>
+          <button className={`${styles.categoryFilterBtn} ${!selectedCategory ? 'active' : ''}`} onClick={() => setSelectedCategory(null)}>
+            Todos
+          </button>
+          {categories.map(cat => (
+            <button
+              key={cat._id}
+              className={`${styles.categoryFilterBtn} ${selectedCategory === cat._id ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(cat._id)}
+            >
+              {cat.icon ? (
+                cat.icon.startsWith('bi-') ? (
+                  <i className={`bi ${cat.icon} me-1`}></i>
+                ) : (
+                  <span className="me-1">{cat.icon}</span>
+                )
+              ) : null}
+              {cat.name}
+            </button>
+          ))}
+        </div>
+
+        {showNoResults && (
+          <div className="alert alert-info mt-3 text-center" role="alert" data-aos="fade-up">
+            <i className="bi bi-emoji-frown me-2"></i>
+            No se encontraron productos que coincidan con tu búsqueda
+          </div>
+        )}
+
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 tienda-body">
           {filteredProducts.map((product, idx) => {
             const campaign = getProductCampaign(product._id);
