@@ -116,8 +116,9 @@
 
 // --- Estilos para el carrusel de banners/noticias ---
 .bannerCarousel {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
+  padding: 0 1rem;
 }
 
 .bannerCard {
@@ -126,48 +127,60 @@
   padding: 1.5rem;
   box-shadow: 0 4px 20px rgba(40, 120, 180, 0.12);
   display: flex;
-  flex-direction: column; // Columna para móviles (Mobile-First)
+  flex-direction: column;
   gap: 1rem;
   align-items: center;
   text-align: center;
+  min-height: 380px;
 
-  // En pantallas de tablet o más grandes, pasa a formato horizontal
   @media (min-width: 768px) {
     flex-direction: row;
     text-align: left;
-    gap: 2rem;
-    padding: 2rem;
+    gap: 2.5rem;
+    padding: 2.5rem;
+    min-height: auto;
   }
 }
 
 .bannerImage {
   width: 100%;
-  max-width: 240px; // Tamaño máximo en móvil
+  max-width: 280px;
   height: auto;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 16 / 10;
   object-fit: cover;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   
-  // En escritorio, la imagen es un poco más pequeña en proporción
   @media (min-width: 768px) {
-    width: 200px;
+    width: 350px;
+    height: 220px;
     max-width: none;
     flex-shrink: 0;
   }
 }
 
 .bannerContent {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  align-items: center;
+
+  @media (min-width: 768px) {
+    align-items: flex-start;
+  }
+
   h4 {
     font-weight: 700;
     color: #2980b9;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.5rem;
   }
 
   div {
     font-size: 1.1rem;
     color: #555;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
   }
 
   a {
@@ -184,6 +197,15 @@
       border-bottom-color: transparent;
     }
   }
+  
+  @media (min-width: 768px) {
+    h4 {
+      font-size: 2rem;
+    }
+    div {
+      font-size: 1.2rem;
+    }
+  }
 }
 
 // --- Estilos para la sección de acciones/botones ---
@@ -194,7 +216,6 @@
   gap: 1rem;
   align-items: center;
   
-  // En escritorio, se ponen en fila
   @media (min-width: 768px) {
     flex-direction: row;
     justify-content: center;
@@ -204,7 +225,7 @@
 
 .actionButton {
   padding: 0.8rem 2rem;
-  border-radius: 50px; // Forma de píldora
+  border-radius: 50px;
   font-weight: 600;
   font-size: 1.1rem;
   text-decoration: none;
