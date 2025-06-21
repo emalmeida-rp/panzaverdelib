@@ -1,11 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from 'react-bootstrap/Modal';
 import styles from './OrderDetailModal.module.scss';
+import axios from 'axios';
 
-// Debes colocar tu imagen QR en la carpeta `public/img/qr-pago.png`
-const QR_CODE_IMAGE_URL = '/img/qr-pago.png';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const OrderDetailModal = ({ show, onHide, order }) => {
+  const [qrCode, setQrCode] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    // Solo generar QR si el modal está visible, el pedido existe y está pendiente
+    if (show && order && order.status === 'pendiente') {
+      const generateQrCode = async () => {
+        setIsLoading(true);
+        setError('');
+        setQrCode('');
+        try {
+          const response = await axios.post(`${API_URL}/mercadopago/create-preference`, {
+            orderId: order._id,
+          });
+
+          if (response.data && response.data.qr_code_base64) {
+            setQrCode(`data:image/jpeg;base64,${response.data.qr_code_base64}`);
+          } else {
+            setError('No se pudo generar el código QR. Inténtalo de nuevo.');
+          }
+        } catch (err) {
+          console.error('Error al generar QR de Mercado Pago:', err);
+          setError('Hubo un problema al generar el QR. Por favor, contacta al soporte.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      generateQrCode();
+    }
+  }, [show, order]);
+
   if (!order) return null;
 
   const isPendingPayment = order.status === 'pendiente';
@@ -21,7 +54,7 @@ const OrderDetailModal = ({ show, onHide, order }) => {
         <div className={styles.statusSection}>
           Estado del pedido:
           <span className={`${styles.statusBadge} ${styles[order.status]}`}>
-            {order.status.replace('_', ' ')}
+            {order.status.replace(/_/g, ' ')}
           </span>
         </div>
 
@@ -48,12 +81,16 @@ const OrderDetailModal = ({ show, onHide, order }) => {
         {isPendingPayment && (
           <div className={styles.qrSection}>
             <h5 className={styles.sectionTitle}>Realizá tu pago</h5>
-            <p>Escaneá el siguiente código QR con tu aplicación de pago para abonar el pedido.</p>
+            <p>Escaneá el código QR con tu app de Mercado Pago para abonar el pedido.</p>
             <div className={styles.qrCodeContainer}>
-              <img src={QR_CODE_IMAGE_URL} alt="Código QR para pago" className={styles.qrImage} />
+              {isLoading && <div className={styles.loader}>Generando QR...</div>}
+              {error && <div className={styles.error}>{error}</div>}
+              {qrCode && !isLoading && !error && (
+                <img src={qrCode} alt="Código QR para pago con Mercado Pago" className={styles.qrImage} />
+              )}
             </div>
             <div className={styles.qrInstructions}>
-              Una vez realizado el pago, notificanos por WhatsApp para que podamos confirmarlo y preparar tu pedido.
+              Una vez realizado el pago, el estado de tu pedido se actualizará automáticamente.
             </div>
           </div>
         )}

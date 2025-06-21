@@ -130,6 +130,21 @@
   border-radius: 0.5rem;
 }
 
+.loader {
+  font-weight: 500;
+  color: #3498db;
+  padding: 2rem;
+}
+
+.error {
+  font-weight: 500;
+  color: #e74c3c;
+  padding: 2rem;
+  border: 1px solid #f5c6cb;
+  background-color: #f8d7da;
+  border-radius: 0.5rem;
+}
+
 .qrInstructions {
   font-size: 0.95rem;
   color: #6c757d;
