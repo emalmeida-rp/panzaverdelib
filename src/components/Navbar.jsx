@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import CartWidget from './CartWidget';
 import { useQuery } from '@tanstack/react-query';
@@ -15,8 +15,45 @@ const Navbar = () => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const categoryParam = params.get('category');
+  const dropdownRef = useRef(null);
+  const navCollapseRef = useRef(null);
+  const togglerRef = useRef(null);
 
-  // React Query para categorías
+  useEffect(() => {
+    if (!showCategories) return;
+
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowCategories(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showCategories]);
+
+  useEffect(() => {
+    if (isNavCollapsed) return;
+
+    const handleClickOutside = (event) => {
+      if (
+        navCollapseRef.current &&
+        !navCollapseRef.current.contains(event.target) &&
+        togglerRef.current &&
+        !togglerRef.current.contains(event.target)
+      ) {
+        setIsNavCollapsed(true);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNavCollapsed]);
+
   const { data: categories = [], isLoading: catLoading, error: catError } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
@@ -24,18 +61,21 @@ const Navbar = () => {
       if (!res.ok) throw new Error('Error al cargar categorías');
       return res.json();
     },
-    refetchInterval: 300000 // refresca cada 5 minutos
+    refetchInterval: 300000
   });
 
   const handleNavCollapse = () => setIsNavCollapsed(!isNavCollapsed);
 
   return (
-    <nav className="navbar z-index-100 navbar-expand-lg navbar-light bg-success w-100 position-sticky top-0">
+    <>
+      <nav className="navbar z-index-100 navbar-expand-lg navbar-light bg-success position-sticky top-0">
       <div className="container-fluid px-4 justify-content-between">
-        <Link to="/" className="navbar-logo" style={{ color: 'white', textDecoration: 'none', fontSize: '1.5rem' }}>
-          Libreria Panza Verde
+          <Link to="/" className={styles.navbarLogo}>
+            <span className={styles.fullBrandName}>Libreria Panza Verde</span>
+            <span className={styles.shortBrandName}>L. Panza Verde</span>
         </Link>
         <button
+            ref={togglerRef}
           className="navbar-toggler"
           type="button"
           onClick={handleNavCollapse}
@@ -44,7 +84,7 @@ const Navbar = () => {
         >
           <span className="navbar-toggler-icon"></span>
         </button>
-        <div className={`${isNavCollapsed ? 'collapse' : ''} navbar-collapse`}>
+          <div ref={navCollapseRef} className={`${isNavCollapsed ? 'collapse' : ''} navbar-collapse`}>
           <div className="navbar-nav ms-auto">
             <Link to="/" className="nav-link" onClick={() => setIsNavCollapsed(true)}>
               <span style={{ display: 'inline-flex', alignItems: 'center' }}>
@@ -52,23 +92,26 @@ const Navbar = () => {
                 Inicio
               </span>
             </Link>
-            <div className="nav-item dropdown" onMouseEnter={() => setShowCategories(true)} onMouseLeave={() => setShowCategories(false)}>
-              <Link to="/productos" className="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" onClick={() => navigate('/productos')}>
+              <div className="nav-item dropdown" ref={dropdownRef}>
+                <a className="nav-link dropdown-toggle" href="#" role="button" onClick={(e) => {
+                    e.preventDefault();
+                    setShowCategories(!showCategories);
+                  }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center' }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-box" aria-label="Productos" style={{ marginRight: 8, verticalAlign: 'middle' }}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                   Productos
                 </span>
-              </Link>
+                </a>
               <ul className={`dropdown-menu ${styles.categoryDropdown} ${showCategories ? 'show' : ''}`}>
                 <li>
-                  <button
-                    className={`${styles.categoryBtn} ${!categoryParam ? styles.activeCategory : ''}`}
-                    onClick={() => {
-                      navigate('/productos');
-                      setShowCategories(false);
-                      setIsNavCollapsed(true);
-                    }}
-                  >
+                    <button
+                      className={`${styles.categoryBtn} ${!categoryParam ? styles.activeCategory : ''}`}
+                      onClick={() => {
+                        navigate('/productos');
+                        setShowCategories(false);
+                        setIsNavCollapsed(true);
+                      }}
+                    >
                     Todos
                   </button>
                 </li>
@@ -79,14 +122,14 @@ const Navbar = () => {
                 ) : (
                   categories.map(cat => (
                     <li key={cat._id}>
-                      <button
-                        className={`${styles.categoryBtn} ${categoryParam === cat._id ? styles.activeCategory : ''}`}
-                        onClick={() => {
-                          navigate(`/productos?category=${cat._id}`);
-                          setShowCategories(false);
-                          setIsNavCollapsed(true);
-                        }}
-                      >
+                        <button
+                          className={`${styles.categoryBtn} ${categoryParam === cat._id ? styles.activeCategory : ''}`}
+                          onClick={() => {
+                            navigate(`/productos?category=${cat._id}`);
+                            setShowCategories(false);
+                            setIsNavCollapsed(true);
+                          }}
+                        >
                         {cat.icon ? (
                           cat.icon.startsWith('bi-') ? (
                             <i className={`bi ${cat.icon} me-1`}></i>
@@ -120,13 +163,11 @@ const Navbar = () => {
               </span>
             </Link>
           </div>
-          <div className="navbar-nav d-lg-none">
-            {/* Mostrar el carrito solo en móviles */}
-            <CartWidget />
-          </div>
         </div>
       </div>
     </nav>
+      <CartWidget />
+    </>
   );
 };
 

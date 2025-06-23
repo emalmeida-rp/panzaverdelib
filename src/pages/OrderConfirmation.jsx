@@ -48,7 +48,7 @@ const OrderConfirmation = () => {
           <p><strong>Nombre:</strong> {order.userName}</p>
           <p><strong>Email:</strong> {order.userEmail}</p>
           <p><strong>Teléfono:</strong> {order.userPhone}</p>
-          <p><strong>Dirección:</strong> {order.userAddress}</p>
+          <p><strong>Método de pago:</strong> {order.userAddress}</p>
         </div>
         <div className="mb-4">
           <h2 className="text-xl font-semibold mb-2">Productos</h2>

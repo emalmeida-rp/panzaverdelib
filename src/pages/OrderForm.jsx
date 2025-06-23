@@ -26,30 +26,30 @@ const OrderForm = () => {
     });
   };
 
-  const createOrder = async (orderData) => {
-    const response = await fetch(`${API_URL}/api/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(orderData)
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Error al crear el pedido');
-    return data;
-  };
-
   const mutation = useMutation({
-    mutationFn: createOrder,
+    mutationFn: async (orderData) => {
+      const response = await fetch(`${API_URL}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Error al crear el pedido');
+      return data;
+    },
     onSuccess: (data) => {
-      showAlert('Pedido creado exitosamente', 'success');
+      showAlert('Pedido creado exitosamente. Puede proceder al pago desde el widget del carrito.', 'success');
       clearCart();
       queryClient.invalidateQueries(['orders']);
       queryClient.invalidateQueries(['notifOrders']);
+      let orderCodes = JSON.parse(localStorage.getItem('orderCodes')) || [];
+      orderCodes.push(data.code);
+      localStorage.setItem('orderCodes', JSON.stringify(orderCodes));
+      
       navigate(`/order-confirmation/${data.code}`);
     },
-    onError: () => {
-      showAlert('Error al crear el pedido', 'error');
+    onError: (error) => {
+      showAlert(error.message || 'Error al crear el pedido', 'error');
     }
   });
 
@@ -132,10 +132,10 @@ const OrderForm = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+            className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:bg-gray-400"
             disabled={mutation.isLoading}
           >
-            Confirmar Pedido
+            {mutation.isLoading ? 'Procesando...' : 'Confirmar Pedido'}
           </button>
         </form>
       </div>

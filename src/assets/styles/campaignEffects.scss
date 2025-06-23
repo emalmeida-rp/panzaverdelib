@@ -1,0 +1,359 @@
+/**
+ * EFECTOS VISUALES PARA CAMPAÑAS
+ * Sistema completo de animaciones y efectos para productos en oferta
+ */
+
+// Variables de configuración
+$primary-color: #2980b9;
+$success-color: #27ae60;
+$warning-color: #f39c12;
+$danger-color: #e74c3c;
+$glow-color: #3498db;
+
+// Duración base de animaciones
+$base-duration: 1s;
+$fast-duration: 0.5s;
+$slow-duration: 2s;
+
+/* ===== EFECTOS DE BADGE ===== */
+
+// Badge básico con pulso - CONTEXTO LIMITADO
+.campaign-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5; // Reducido para evitar conflictos
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  color: white;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transform-origin: center;
+  // Limitar contexto de stacking
+  isolation: isolate;
+  
+  &.effect-badge {
+    animation: badgePulse $base-duration infinite alternate ease-in-out;
+  }
+  
+  &.effect-wave {
+    position: relative;
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+      );
+      animation: waveEffect 2s infinite;
+      z-index: 1; // Local al badge
+    }
+  }
+}
+
+/* ===== EFECTOS DE TARJETA ===== */
+
+// Contenedor principal para efectos - SCOPE LIMITADO
+.campaign-card {
+  // Crear contexto de stacking aislado
+  isolation: isolate;
+  position: relative;
+  
+  // Solo aplicar efectos dentro del scope de productos
+  &.effect-shine {
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 70%
+      );
+      transform: rotate(45deg);
+      animation: shineEffect 3s infinite;
+      pointer-events: none;
+      z-index: 1; // Local al componente
+    }
+    
+    &:hover::before {
+      animation-duration: 1s;
+    }
+  }
+
+  // Rebote al hover
+  &.effect-bounce {
+    transition: transform 0.3s ease;
+    
+    &:hover {
+      animation: bounceEffect 0.6s ease;
+    }
+  }
+
+  // Pulso continuo
+  &.effect-pulse {
+    animation: pulseEffect 2s infinite ease-in-out;
+  }
+
+  // Fuegos artificiales
+  &.effect-firework {
+    &::after {
+      content: '✨';
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 1.5rem;
+      animation: fireworkEffect 2s infinite;
+      pointer-events: none;
+      z-index: 2; // Local al componente
+    }
+  }
+
+  // Borde resplandeciente
+  &.effect-glow {
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(45deg, $glow-color, $primary-color, $success-color, $warning-color);
+      border-radius: inherit;
+      z-index: -1; // Detrás del contenido
+      animation: glowEffect 2s linear infinite;
+      opacity: 0.7;
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: white;
+      border-radius: inherit;
+      z-index: -1; // Detrás del contenido
+    }
+  }
+
+  // Flotación suave
+  &.effect-floating {
+    animation: floatingEffect 3s ease-in-out infinite;
+  }
+
+  // Aparición/desaparición
+  &.effect-fade {
+    animation: fadeEffect 4s ease-in-out infinite;
+  }
+
+  // Sombra dinámica
+  &.effect-shadow {
+    animation: shadowEffect 2s ease-in-out infinite alternate;
+  }
+}
+
+/* ===== KEYFRAMES ===== */
+
+@keyframes badgePulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
+@keyframes waveEffect {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes shineEffect {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+@keyframes bounceEffect {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+
+@keyframes pulseEffect {
+  0% { transform: scale(1); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+  50% { transform: scale(1.02); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
+  100% { transform: scale(1); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+}
+
+@keyframes fireworkEffect {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  25% { transform: scale(1.2) rotate(90deg); opacity: 0.8; }
+  50% { transform: scale(0.8) rotate(180deg); opacity: 0.6; }
+  75% { transform: scale(1.1) rotate(270deg); opacity: 0.8; }
+}
+
+@keyframes glowEffect {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes floatingEffect {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes fadeEffect {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes shadowEffect {
+  0% { 
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(0);
+  }
+  100% { 
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+  }
+}
+
+/* ===== EFECTOS ESPECIALES ===== */
+
+// Efecto de partículas (solo CSS) - SCOPE LIMITADO
+.campaign-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1; // Local al contenedor
+  
+  &::before,
+  &::after {
+    content: '⭐';
+    position: absolute;
+    font-size: 0.8rem;
+    opacity: 0;
+    animation: particleFloat 4s infinite;
+    z-index: 1; // Local
+  }
+  
+  &::before {
+    top: 20%;
+    left: 20%;
+    animation-delay: 0s;
+  }
+  
+  &::after {
+    top: 60%;
+    right: 20%;
+    animation-delay: 2s;
+  }
+}
+
+@keyframes particleFloat {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  20% { opacity: 1; transform: translateY(-10px) scale(1); }
+  80% { opacity: 1; transform: translateY(-20px) scale(1); }
+  100% { opacity: 0; transform: translateY(-30px) scale(0.5); }
+}
+
+/* ===== LIMITACIONES DE CONTEXTO ===== */
+
+// Asegurar que los efectos NO afecten modales, headers, o elementos de navegación
+.modal,
+.modal-dialog,
+.modal-content,
+.modal-header,
+.modal-body,
+.modal-footer,
+.navbar,
+.nav,
+.dropdown,
+.dropdown-menu,
+.sidebar,
+header,
+.admin-dashboard,
+.dashboard-content {
+  // Crear contexto de stacking independiente
+  isolation: isolate;
+  
+  // Anular efectos de campaña dentro de estos elementos
+  .campaign-card,
+  .campaign-badge {
+    animation: none !important;
+    transform: none !important;
+    
+    &::before,
+    &::after {
+      display: none !important;
+    }
+  }
+}
+
+/* ===== UTILIDADES ===== */
+
+// Desactivar efectos en dispositivos con motion reducido
+@media (prefers-reduced-motion: reduce) {
+  .campaign-card,
+  .campaign-badge {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .campaign-card::before,
+  .campaign-card::after {
+    animation: none !important;
+  }
+}
+
+// Efectos adicionales para hover en desktop
+@media (hover: hover) {
+  .campaign-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    // Evitar hover dentro de modales o admin
+    .modal &,
+    .admin-dashboard &,
+    .dashboard-content & {
+      &:hover {
+        transform: none;
+        box-shadow: none;
+      }
+    }
+  }
+}
+
+/* ===== TEMAS DE COLORES ===== */
+
+.campaign-theme-primary { --campaign-color: #{$primary-color}; }
+.campaign-theme-success { --campaign-color: #{$success-color}; }
+.campaign-theme-warning { --campaign-color: #{$warning-color}; }
+.campaign-theme-danger { --campaign-color: #{$danger-color}; }
+
+.campaign-badge.themed {
+  background: var(--campaign-color, #{$primary-color});
+}
+
+.campaign-card.themed.effect-glow::before {
+  background: linear-gradient(45deg, 
+    var(--campaign-color, #{$primary-color}), 
+    color-mix(in srgb, var(--campaign-color, #{$primary-color}) 80%, white)
+  );
+} 

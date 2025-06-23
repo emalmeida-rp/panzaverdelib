@@ -24,6 +24,20 @@ const CartWidget = () => {
   // Detectar si es móvil
   const isMobile = window.innerWidth < 992;
 
+  // Configuración segura para SweetAlert2 (evitar conflictos de z-index)
+  const safeSwalConfig = {
+    customClass: {
+      container: 'swal2-container-custom',
+      popup: 'swal2-popup-custom'
+    },
+    didOpen: () => {
+      const container = document.querySelector('.swal2-container');
+      if (container) {
+        container.style.zIndex = '10000';
+      }
+    }
+  };
+
   const handleDropdown = () => setShowDropdown(!showDropdown);
   const handleModal = () => setShowModal(!showModal);
 
@@ -71,9 +85,21 @@ const CartWidget = () => {
     refetchInterval: 240000 // refresca cada 4 minutos
   });
 
+  // Limpiar estado del modal cuando se cierre
+  useEffect(() => {
+    if (!showDetailModal) {
+      setSelectedOrder(null);
+    }
+  }, [showDetailModal]);
+
   const handleOpenOrderDetail = (order) => {
     setSelectedOrder(order);
     setShowDetailModal(true);
+  };
+
+  const handleCloseOrderDetail = () => {
+    setSelectedOrder(null);
+    setShowDetailModal(false);
   };
 
   const handleConfirmPurchase = async () => {
@@ -94,8 +120,12 @@ const CartWidget = () => {
             <input type="tel" class="form-control" id="userPhone" required>
           </div>
           <div class="mb-3">
-            <label for="userAddress" class="form-label">Dirección de entrega</label>
-            <input type="text" class="form-control" id="userAddress" required>
+            <label for="userAddress" class="form-label">Método de pago</label>
+            <select class="form-control" id="userAddress" required>
+              <option value="">Selecciona método de pago</option>
+              <option value="QR MercadoPago">QR MercadoPago</option>
+              <option value="Presencial">Presencial (efectivo/tarjeta)</option>
+            </select>
           </div>
           <div class="mb-3">
             <label for="orderComments" class="form-label">
@@ -117,6 +147,7 @@ const CartWidget = () => {
         confirmButtonText: 'Confirmar',
         cancelButtonText: 'Cancelar',
         focusConfirm: false,
+        ...safeSwalConfig,
         preConfirm: () => {
           const userName = document.getElementById('userName').value;
           const userEmail = document.getElementById('userEmail').value;
@@ -163,62 +194,85 @@ const CartWidget = () => {
             localStorage.setItem('lastOrderCode', data.code);
             await MySwal.fire({
               icon: 'success',
-              title: '¡Pedido realizado!',
-              html: `<p>Tu código de pedido es: <b>${data.code}</b></p>
-                     <h4>Resumen:</h4>
-                     <ul style="text-align:left;">${orderData.items.map(item => `<li>${item.quantity} x ${cart.find(p => p._id === item.product)?.name || 'Producto'}</li>`).join('')}</ul>
-                     <p><b>Total: $${orderData.total}</b></p>
-                     <p style='font-size: 0.95em; text-align: center;'>
-                       ALIAS MP: Panzaverde.lib
-                       </p>
-                     <div class="swal-qr-row" style='display: flex; align-items: center; gap: 16px; margin-top: 24px;'>
-                       <img src='https://placehold.co/160x160?text=QR' alt='QR de pago' style='width: 160px; height: 160px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);'>
-                       <div style='font-size: 0.95em; text-align: left;'>
-                         Te compartimos el código QR y/o alias de Mercado por si preferis adelantar el pago, o aguarda a que te contactemos para coordinar y completar tu pedido. .<br>
-                         <strong>¡Muchas gracias por tu confianza! Visita el carrito para conocer el estado de tu pedido.</strong>
-                       </div>
-                     </div>
-                     <style>
-                       @media (max-width: 600px) {
-                         .swal-qr-row {
-                           flex-direction: column !important;
-                           align-items: center !important;
-                           text-align: center !important;
-                         }
-                         .swal-qr-row img {
-                           width: 80vw !important;
-                           height: 80vw !important;
-                           max-width: 320px !important;
-                           max-height: 320px !important;
-                         }
-                         .swal-qr-row div {
-                           text-align: center !important;
-                           margin-top: 1rem;
-                         }
-                       }
-                     </style>`,
-              confirmButtonText: 'Aceptar'
+              title: '¡Pedido realizado exitosamente!',
+              html: `
+                <div style="text-align: center;">
+                  <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <h5 style="color: #495057; margin-bottom: 10px;">📋 Código de Pedido</h5>
+                    <span style="font-size: 1.25em; font-weight: bold; color: #28a745;">${data.code}</span>
+                  </div>
+                  
+                  <div style="text-align: left; background: #fff; padding: 15px; border: 1px solid #dee2e6; border-radius: 8px; margin: 15px 0;">
+                    <h6 style="color: #495057; margin-bottom: 10px; text-align: center;">📦 Resumen del Pedido</h6>
+                    <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                      ${orderData.items.map(item => `<li>${item.quantity} x ${cart.find(p => p._id === item.product)?.name || 'Producto'}</li>`).join('')}
+                    </ul>
+                    <hr style="margin: 10px 0;">
+                    <div style="text-align: center;">
+                      <strong style="font-size: 1.1em; color: #28a745;">Total: $${orderData.total}</strong>
+                    </div>
+                  </div>
+
+                  <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <h6 style="color: #0056b3; margin-bottom: 10px;">💳 Información de Pago</h6>
+                    <p style="margin: 5px 0; color: #495057;"><strong>Método seleccionado:</strong> ${formValues.userAddress}</p>
+                    <p style="margin: 5px 0; color: #495057; font-size: 0.9em;">
+                      <strong>Alias MercadoPago:</strong> Panzaverde.lib
+                    </p>
+                  </div>
+
+                  <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <p style="margin: 0; color: #856404; font-size: 0.95em; line-height: 1.5;">
+                      <strong>📞 Próximos pasos:</strong><br>
+                      Te contactaremos pronto para coordinar tu pedido. Mientras tanto, puedes consultar el estado desde el ícono del carrito.
+                    </p>
+                  </div>
+
+                  <p style="margin-top: 20px; color: #28a745; font-weight: bold;">
+                    ¡Gracias por confiar en nosotros! 🌟
+                  </p>
+                </div>`,
+              confirmButtonText: 'Entendido',
+              confirmButtonColor: '#28a745',
+              ...safeSwalConfig,
             });
           } else {
-            await MySwal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo crear el pedido' });
+            await MySwal.fire({ 
+              icon: 'error', 
+              title: 'Error', 
+              text: data.message || 'No se pudo crear el pedido',
+              ...safeSwalConfig
+            });
           }
         } catch (error) {
-          await MySwal.fire({ icon: 'error', title: 'Error', text: 'No se pudo conectar con el servidor' });
+          await MySwal.fire({ 
+            icon: 'error', 
+            title: 'Error', 
+            text: 'No se pudo conectar con el servidor',
+            ...safeSwalConfig
+          });
         }
       }
     } catch (error) {
       console.error('Error en la confirmación de compra:', error);
-      await MySwal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al confirmar la compra.' });
+      await MySwal.fire({ 
+        icon: 'error', 
+        title: 'Error', 
+        text: 'Ocurrió un error al confirmar la compra.',
+        ...safeSwalConfig
+      });
     }
   };
 
   const getOrderStatusVisual = (status) => {
     switch (status) {
-      case 'pendiente':
+      case 'pago_pendiente':
         return { text: 'Pendiente de pago', color: '#f39c12', icon: 'bi-hourglass-split' };
+      case 'pendiente':
+        return { text: 'Pendiente', color: '#f39c12', icon: 'bi-hourglass-split' };
       case 'procesando':
         return { text: 'Pago confirmado', color: '#3498db', icon: 'bi-patch-check-fill' };
-      case 'en_preparacion':
+      case 'on_hold':
         return { text: 'En preparación', color: '#8e44ad', icon: 'bi-box-seam' };
       case 'enviado':
         return { text: 'Listo para retirar', color: '#1abc9c', icon: 'bi-truck' };
@@ -359,7 +413,7 @@ const CartWidget = () => {
 
       <OrderDetailModal
         show={showDetailModal}
-        onHide={() => setShowDetailModal(false)}
+        onHide={handleCloseOrderDetail}
         order={selectedOrder}
       />
     </>

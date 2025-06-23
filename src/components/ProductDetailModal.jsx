@@ -25,8 +25,17 @@ const ProductDetailModal = ({ show, onHide, product, onShare, campaigns }) => {
   const { addToCart } = useCart();
 
   useEffect(() => {
-    if (show && product) setQuantity(1);
+    if (show && product) {
+      setQuantity(1);
+    }
   }, [show, product]);
+
+  // Limpiar estado cuando se cierre
+  useEffect(() => {
+    if (!show) {
+      setQuantity(1);
+    }
+  }, [show]);
 
   if (!product) return null;
 
@@ -46,8 +55,13 @@ const ProductDetailModal = ({ show, onHide, product, onShare, campaigns }) => {
     }
   };
 
+  const handleClose = () => {
+    setQuantity(1);
+    onHide();
+  };
+
   return (
-    <Modal show={show} onHide={onHide} centered size="lg">
+    <Modal show={show} onHide={handleClose} centered size="lg">
       <Modal.Header closeButton>
         <Modal.Title>{product.name}</Modal.Title>
       </Modal.Header>

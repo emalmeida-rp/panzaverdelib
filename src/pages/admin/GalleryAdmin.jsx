@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAlert } from '../../context/AlertContext';
 import { fetchWithAuth } from '../../utils/api';
 import axios from 'axios';
+import styles from './AdminDashboard.module.scss';
+import { FaPlus, FaEdit, FaTrash, FaUpload, FaCamera } from 'react-icons/fa';
 
 const CLOUDINARY_UPLOAD_PRESET = 'upload_lpv';
 const CLOUDINARY_CLOUD_NAME = 'libpanzaverdearcloudinary'; 
@@ -151,83 +153,89 @@ const GalleryAdmin = () => {
   };
 
   return (
-    <div>
-      <h2>Administrar Galería</h2>
-      <form className="row g-3 mb-4" onSubmit={handleAddImage}>
-        <div className="col-md-4">
-          <input
-            type="file"
-            className="form-control"
-            accept="image/*"
-            onChange={handleFileChange}
-          />
-        </div>
-        <div className="col-md-4">
-          <input
-            type="text"
-            className="form-control"
-            name="url"
-            placeholder="URL de la imagen (opcional si subes archivo)"
-            value={newImage.url}
-            onChange={handleInputChange}
-            disabled={!!file}
-          />
-        </div>
-        <div className="col-md-3">
-          <input
-            type="text"
-            className="form-control"
-            name="title"
-            placeholder="Título de la imagen"
-            value={newImage.title}
-            onChange={handleInputChange}
-          />
-        </div>
-        <div className="col-md-4">
-          <input
-            type="text"
-            className="form-control"
-            name="description"
-            placeholder="Descripción de la imagen (opcional)"
-            value={newImage.description}
-            onChange={handleInputChange}
-          />
-        </div>
-        <div className="col-md-1">
-          <button type="submit" className="btn btn-success w-100" disabled={loading || uploading}>
-            {uploading ? 'Subiendo...' : 'Agregar'}
-          </button>
-        </div>
-      </form>
+    <>
+      <div className={styles.pageHeader}>
+        <h2 className={styles.pageTitle}>
+          <FaCamera className="me-2" />
+          Administrar Galería
+        </h2>
+      </div>
 
-      {loading ? (
-        <div className="row row-cols-1 row-cols-md-3 g-4">
-          {[...Array(6)].map((_, idx) => (
-            <div className="col" key={idx}>
-              <div className="card h-100 shadow-sm border-0 placeholder-glow">
-                <div className="card-img-top placeholder" style={{ height: 220, background: '#e0e0e0', borderRadius: 8 }}></div>
-                <div className="card-body d-flex flex-column justify-content-between">
-                  <h5 className="card-title text-center mb-2 placeholder col-8" style={{ height: 24, background: '#d0d0d0', borderRadius: 6, margin: '0 auto' }}></h5>
-                  <p className="card-text placeholder col-10" style={{ height: 16, background: '#f0f0f0', borderRadius: 6, margin: '0 auto' }}></p>
+      <div className={styles.contentCard + ' mb-4'}>
+        <form onSubmit={handleAddImage} className="row g-3 align-items-center">
+          <div className="col-md-4">
+            <input
+              type="file"
+              className="form-control"
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+          </div>
+          <div className="col-md-4">
+            <input
+              type="text"
+              className="form-control"
+              name="url"
+              placeholder="URL de la imagen (opcional si subes archivo)"
+              value={newImage.url}
+              onChange={handleInputChange}
+              disabled={!!file}
+            />
+          </div>
+          <div className="col-md-3">
+            <input
+              type="text"
+              className="form-control"
+              name="title"
+              placeholder="Título de la imagen"
+              value={newImage.title}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div className="col-md-4">
+            <input
+              type="text"
+              className="form-control"
+              name="description"
+              placeholder="Descripción de la imagen (opcional)"
+              value={newImage.description}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div className="col-md-auto">
+            <button type="submit" className={styles.btn + ' ' + styles.btnPrimary} disabled={loading || uploading}>
+              {uploading ? 'Subiendo...' : <><FaPlus /> Agregar Imagen</>}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="row g-4">
+        {loading ? (
+          [...Array(6)].map((_, idx) => (
+            <div className="col-lg-4 col-md-6" key={idx}>
+              <div className={styles.contentCard}>
+                <div className={styles.placeholder} style={{ height: 220, background: '#e0e0e0', borderRadius: 8 }}></div>
+                <div className={styles.cardBody}>
+                  <h5 className={styles.cardTitle + ' ' + styles.placeholder} style={{ height: 24, background: '#d0d0d0', borderRadius: 6, margin: '0 auto' }}></h5>
+                  <p className={styles.cardText + ' ' + styles.placeholder} style={{ height: 16, background: '#f0f0f0', borderRadius: 6, margin: '0 auto' }}></p>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="row row-cols-1 row-cols-md-3 g-4">
-          {images.map(img => (
-            <div className="col" key={img._id || img.id}>
-              <div className="card h-100 shadow-sm border-0">
+          ))
+        ) : (
+          images.map(img => (
+            <div className="col-lg-4 col-md-6" key={img._id}>
+              <div className={styles.contentCard} style={{padding: 0}}>
                 <div style={{ background: '#f8f9fa', height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderTopLeftRadius: 8, borderTopRightRadius: 8 }}>
-                  <img src={img.url || img.imagen} className="card-img-top" alt={img.title || img.titulo} style={{ objectFit: 'cover', height: '100%', width: '100%', maxHeight: 220, maxWidth: '100%' }} />
+                  <img src={img.url || img.imagen} className={styles.cardImgTop} alt={img.title || img.titulo} style={{ objectFit: 'cover', height: '100%', width: '100%', maxHeight: 220, maxWidth: '100%' }} />
                 </div>
-                <div className="card-body d-flex flex-column justify-content-between">
-                  {editingId === (img._id || img.id) ? (
+                <div style={{padding: '1rem'}}>
+                  {editingId === img._id ? (
                     <>
                       <input
                         type="text"
-                        className="form-control mb-2"
+                        className={styles.formControl + ' mb-2'}
                         name="title"
                         value={editFields.title}
                         onChange={handleEditChange}
@@ -235,7 +243,7 @@ const GalleryAdmin = () => {
                       />
                       <input
                         type="text"
-                        className="form-control mb-2"
+                        className={styles.formControl + ' mb-2'}
                         name="description"
                         value={editFields.description}
                         onChange={handleEditChange}
@@ -243,7 +251,7 @@ const GalleryAdmin = () => {
                       />
                       <input
                         type="text"
-                        className="form-control mb-2"
+                        className={styles.formControl + ' mb-2'}
                         name="url"
                         value={editFields.url}
                         onChange={handleEditChange}
@@ -252,40 +260,32 @@ const GalleryAdmin = () => {
                       />
                       <input
                         type="file"
-                        className="form-control mb-2"
+                        className={styles.formControl + ' mb-2'}
                         accept="image/*"
                         onChange={handleEditFileChange}
                       />
-                      <div className="d-flex gap-2 justify-content-center">
-                        <button className="btn btn-success btn-sm" onClick={() => saveEdit(img._id || img.id)}>
-                          Guardar
-                        </button>
-                        <button className="btn btn-secondary btn-sm" onClick={cancelEdit}>
-                          Cancelar
-                        </button>
+                      <div className={styles.actionButtons}>
+                        <button className="primary" onClick={() => saveEdit(img._id)}><FaEdit /> Guardar</button>
+                        <button onClick={cancelEdit}><FaTrash /> Cancelar</button>
                       </div>
                     </>
                   ) : (
                     <>
-                      <h5 className="card-title text-center mb-2">{img.title || img.titulo}</h5>
-                      {img.description && <p className="card-text text-center">{img.description}</p>}
-                      <div className="d-flex gap-2 justify-content-center">
-                        <button className="btn btn-warning btn-sm" onClick={() => startEdit(img)}>
-                          Editar
-                        </button>
-                        <button className="btn btn-danger btn-sm" onClick={() => handleDeleteImage(img._id || img.id)}>
-                          Eliminar
-                        </button>
+                      <h5>{img.title}</h5>
+                      <p>{img.description}</p>
+                      <div className={styles.actionButtons}>
+                        <button onClick={() => startEdit(img)}><FaEdit /> Editar</button>
+                        <button className="danger" onClick={() => handleDeleteImage(img._id)}><FaTrash /> Eliminar</button>
                       </div>
                     </>
                   )}
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
+          ))
+        )}
+      </div>
+    </>
   );
 };
 

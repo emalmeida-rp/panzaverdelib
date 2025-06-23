@@ -1,153 +1,217 @@
-.modalTitle {
-  font-weight: 600;
-  font-size: 1.25rem;
-  color: #333;
-}
-
-.orderCode {
-  color: #2980b9;
-  font-family: monospace;
+/* Estilos Mobile-First (por defecto) */
+.modalDialog {
+  max-width: 500px;
+  width: 90%;
+  margin: 4rem auto 2rem; /* Margen superior amplio para evitar solapamiento */
 }
 
 .modalBody {
-  padding: 1.5rem 2rem;
-  background-color: #f9fafb;
+  padding: 0;
+  border-radius: 12px;
+  background-color: #f8f9fa;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
-.statusSection {
-  margin-bottom: 1.5rem;
-  font-size: 1.1rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.statusBadge {
-  display: inline-block;
-  padding: 0.4em 0.8em;
-  font-size: 0.9em;
-  font-weight: 700;
+.closeButton {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 2rem;
+  font-weight: 300;
+  color: #6c757d;
+  background: none;
+  border: none;
+  cursor: pointer;
   line-height: 1;
-  text-align: center;
-  white-space: nowrap;
-  vertical-align: baseline;
-  border-radius: 1rem;
-  color: #fff;
-  text-transform: capitalize;
-
-  &.pendiente { background-color: #f39c12; }
-  &.procesando { background-color: #3498db; }
-  &.en_preparacion { background-color: #8e44ad; }
-  &.enviado { background-color: #1abc9c; }
-  &.completado { background-color: #2ecc71; }
-  &.cancelado { background-color: #e74c3c; }
+  padding: 0;
+  z-index: 10;
+  &:hover {
+    color: #343a40;
+  }
 }
 
-.sectionTitle {
-  font-weight: 600;
-  margin-bottom: 1rem;
-  border-bottom: 2px solid #e9ecef;
-  padding-bottom: 0.5rem;
+.header {
+  background-color: #ffffff;
+  padding: 24px;
+  text-align: center;
+  border-bottom: 1px solid #dee2e6;
+  .title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #343a40;
+  }
+  .orderCode {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1rem;
+    color: #6c757d;
+    background-color: #e9ecef;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+}
+
+.content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.statusSection, .totalSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.1rem;
+  strong {
+    color: #495057;
+  }
+}
+
+.statusTag {
+  color: white;
+  padding: 5px 12px;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.3;
+  white-space: normal;
+  text-align: center;
+  justify-content: center;
+  max-width: 55%;
+}
+
+.productsTitle {
+  font-size: 1.1rem;
   color: #495057;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 8px;
+  margin-bottom: -10px;
 }
 
 .itemsList {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-.item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem;
-  background-color: #fff;
-  border: 1px solid #e9ecef;
-  border-radius: 0.5rem;
-}
-
-.itemDetails {
-  display: flex;
-  flex-direction: column;
-}
-
-.itemName {
-  font-weight: 600;
-  color: #343a40;
-}
-
-.itemQuantity {
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
-.itemPrice {
-  font-weight: 700;
-  color: #28a745;
-  font-size: 1.1rem;
+  gap: 12px;
+  .item {
+    display: flex;
+    justify-content: space-between;
+  }
+  .itemName {
+    color: #6c757d;
+  }
+  .itemPrice {
+    font-weight: 500;
+    color: #343a40;
+  }
 }
 
 .totalSection {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 2px solid #e9ecef;
-  font-size: 1.25rem;
-}
-
-.totalAmount {
-  font-weight: 700;
-  color: #212529;
+  padding-top: 16px;
+  border-top: 2px dashed #dee2e6;
+  .totalAmount {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #28a745;
+  }
 }
 
 .qrSection {
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background-color: #fff;
-  border: 1px dashed #2980b9;
-  border-radius: 0.75rem;
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
   text-align: center;
+  margin-top: 10px;
+}
+
+.qrTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.qrInstructions, .qrFooter {
+  font-size: 0.9rem;
+  color: #6c757d;
+  max-width: 300px;
+  margin: 0 auto 16px auto;
 }
 
 .qrCodeContainer {
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-  display: flex;
-  justify-content: center;
+  margin-bottom: 16px;
+  .qrImage {
+    width: 180px;
+    height: 180px;
+    border-radius: 8px;
+  }
+  .loader, .error {
+    font-weight: 500;
+    color: #6c757d;
+    padding: 2rem;
+  }
+  .error {
+    color: #e74c3c;
+  }
 }
 
-.qrImage {
-  max-width: 200px;
-  height: auto;
-  border: 4px solid #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 0.5rem;
+.footer {
+  padding: 16px 24px;
+  background-color: #ffffff;
+  text-align: right;
+  border-top: 1px solid #dee2e6;
+
+  .closeAction {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    &:hover {
+      background-color: #5a6268;
+    }
+  }
 }
 
-.loader {
-  font-weight: 500;
-  color: #3498db;
-  padding: 2rem;
-}
+/* Estilos para pantallas más grandes (Desktop) */
+@media (min-width: 576px) {
+  .modalDialog {
+    margin: 3rem auto; /* Restablecer margen para escritorio */
+  }
 
-.error {
-  font-weight: 500;
-  color: #e74c3c;
-  padding: 2rem;
-  border: 1px solid #f5c6cb;
-  background-color: #f8d7da;
-  border-radius: 0.5rem;
-}
+  .modalBody {
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh; /* Limitar altura y activar scroll interno */
+  }
 
-.qrInstructions {
-  font-size: 0.95rem;
-  color: #6c757d;
-  max-width: 450px;
-  margin: 0 auto;
+  .header, .footer {
+    flex-shrink: 0; /* Evitar que el header/footer se encojan */
+  }
+
+  .content {
+    overflow-y: auto; /* Activar scroll solo para el contenido */
+    flex-grow: 1;
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: #aaa;
+    }
+  }
 } 

@@ -69,7 +69,7 @@ const CampaignsAdmin = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetchWithAuth('image.png/products');
+      const res = await fetchWithAuth('/products');
       const data = await res.json();
       setProducts(data);
     } catch {}
@@ -498,12 +498,3 @@ const CampaignsAdmin = () => {
                 Cancelar
               </button>
             </div>
-          </form>
-        </Modal.Body>
-        </Modal>
-      )}
-    </>
-  );
-};
-
-export default CampaignsAdmin; 

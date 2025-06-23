@@ -133,9 +133,9 @@ const Home = () => {
       <section className="mb-5">
         {!bannersLoading && banners.length > 0 && (
           <>
-            <div className="alert alert-secondary text-center" role="alert">
-              Noticias y anuncios
-            </div>
+        <div className="alert alert-secondary text-center" role="alert">
+          Noticias y anuncios
+        </div>
             <Carousel
               indicators={banners.length > 1}
               controls={banners.length > 1}
@@ -151,7 +151,7 @@ const Home = () => {
                         src={banner.image}
                         alt={banner.title}
                         className={homeStyles.bannerImage}
-                      />
+                />
                     )}
                     <div className={homeStyles.bannerContent}>
                       <h4>{banner.title}</h4>
@@ -163,9 +163,9 @@ const Home = () => {
                       )}
                     </div>
                   </div>
-                </Carousel.Item>
-              ))}
-            </Carousel>
+              </Carousel.Item>
+            ))}
+          </Carousel>
           </>
         )}
       </section>
@@ -254,27 +254,27 @@ const Home = () => {
       </section>
 
       {/* Tarjetas de marcas */}
-      <aside>
-        <div className="alert alert-secondary text-center" role="alert">
-          <p className="card-title mb-0">Trabajamos con las siguientes marcas:</p>
+<aside>
+  <div className="alert alert-secondary text-center" role="alert">
+    <p className="card-title mb-0">Trabajamos con las siguientes marcas:</p>
+  </div>
+  {brandsLoading ? (
+    <div className="text-center my-4">Cargando marcas...</div>
+  ) : brandsError ? (
+    <div className="alert alert-danger text-center">{brandsError}</div>
+  ) : brands.length === 0 ? (
+    <div className="alert alert-info text-center">No hay marcas registradas.</div>
+  ) : (
+    <div className={styles.brandGrid}>
+      {brands.map((brand, idx) => (
+        <div className={styles.brandBadge} key={brand._id || idx} title={brand.name}>
+          <img src={brand.logo} className={styles.brandLogo} alt={`Logo ${brand.name}`} />
+          <div className={styles.brandName}>{brand.name}</div>
         </div>
-        {brandsLoading ? (
-          <div className="text-center my-4">Cargando marcas...</div>
-        ) : brandsError ? (
-          <div className="alert alert-danger text-center">{brandsError}</div>
-        ) : brands.length === 0 ? (
-          <div className="alert alert-info text-center">No hay marcas registradas.</div>
-        ) : (
-          <div className={styles.brandGrid}>
-            {brands.map((brand, idx) => (
-              <div className={styles.brandBadge} key={brand._id || idx} title={brand.name}>
-                <img src={brand.logo} className={styles.brandLogo} alt={`Logo ${brand.name}`} />
-                <div className={styles.brandName}>{brand.name}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </aside>
+      ))}
+    </div>
+  )}
+</aside>
 
       {/* Sección de acciones */}
       <section className={homeStyles.actionsContainer}>

@@ -1,9 +1,95 @@
 import React, { useState, useEffect } from 'react';
-import Modal from 'react-bootstrap/Modal';
+import { createPortal } from 'react-dom';
 import { fetchWithAuth } from '../../utils/api';
 import { useAlert } from '../../context/AlertContext';
 import styles from './AdminDashboard.module.scss';
 import axios from 'axios';
+
+// Modal personalizado que evita completamente Bootstrap
+const CustomModal = ({ show, onHide, title, children, size = 'lg' }) => {
+  if (!show) return null;
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onHide();
+    }
+  };
+
+  return createPortal(
+    <div 
+      className="modal-overlay" 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        padding: '1rem'
+      }}
+      onClick={handleBackdropClick}
+    >
+      <div 
+        className="modal-content"
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          width: size === 'lg' ? '90%' : '60%',
+          maxWidth: size === 'lg' ? '800px' : '500px',
+          maxHeight: '90vh',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.15)'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div 
+          className="modal-header"
+          style={{
+            padding: '1rem 1.5rem',
+            borderBottom: '1px solid #dee2e6',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexShrink: 0
+          }}
+        >
+          <h5 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 500 }}>{title}</h5>
+          <button
+            type="button"
+            onClick={onHide}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              padding: '0.25rem',
+              lineHeight: 1
+            }}
+          >
+            ×
+          </button>
+        </div>
+        <div 
+          className="modal-body"
+          style={{
+            padding: '1.5rem',
+            overflowY: 'auto',
+            flexGrow: 1
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
 
 const ProductEditModal = ({ show, onHide, product, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -46,6 +132,7 @@ const ProductEditModal = ({ show, onHide, product, onSuccess }) => {
     }
   }, [product]);
 
+  // Limpiar estado cuando se cierre el modal
   useEffect(() => {
     if (!show) {
       setFormData({
@@ -57,6 +144,7 @@ const ProductEditModal = ({ show, onHide, product, onSuccess }) => {
         category: '',
         image: ''
       });
+      setLoading(false);
     }
   }, [show]);
 
@@ -136,135 +224,149 @@ const ProductEditModal = ({ show, onHide, product, onSuccess }) => {
     }
   };
 
+  const handleClose = () => {
+    setFormData({
+      name: '',
+      description: '',
+      price: '',
+      stock: '',
+      isAvailable: true,
+      category: '',
+      image: ''
+    });
+    setLoading(false);
+    onHide();
+  };
+
   return (
-    <Modal style={{ top: '3rem' }} show={show} onHide={onHide} size="lg" dialogClassName="custom-modal-dialog">
-      <Modal.Header closeButton>
-        <Modal.Title>{product ? 'Editar Producto' : 'Nuevo Producto'}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <form onSubmit={handleSubmit}>
-          <div className="row g-3">
-            <div className="col-md-6">
-              <label className="form-label">Nombre</label>
+    <CustomModal 
+      show={show} 
+      onHide={handleClose} 
+      title={product ? 'Editar Producto' : 'Nuevo Producto'}
+      size="lg"
+    >
+      <form onSubmit={handleSubmit}>
+        <div className="row g-3">
+          <div className="col-md-6">
+            <label className="form-label">Nombre</label>
+            <input
+              type="text"
+              className={`form-control ${styles.dashboardInput}`}
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="col-md-6">
+            <label className="form-label">Precio</label>
+            <input
+              type="number"
+              className={`form-control ${styles.dashboardInput}`}
+              name="price"
+              value={formData.price}
+              onChange={handleChange}
+              required
+              min="0"
+              step="0.01"
+            />
+          </div>
+          <div className="col-md-6">
+            <label className="form-label">Stock</label>
+            <input
+              type="number"
+              className={`form-control ${styles.dashboardInput}`}
+              name="stock"
+              value={formData.stock}
+              onChange={handleChange}
+              required
+              min="0"
+            />
+          </div>
+          <div className="col-md-6">
+            <label className="form-label">Categoría</label>
+            <select
+              className={`form-select ${styles.dashboardSelect}`}
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Seleccionar categoría...</option>
+              {categories.map(cat => (
+                <option key={cat._id} value={cat._id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="col-12">
+            <label className="form-label">Descripción</label>
+            <textarea
+              className={`form-control ${styles.dashboardInput}`}
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows="3"
+              required
+            />
+          </div>
+          <div className="col-12">
+            <label className="form-label">Imagen</label>
+            <div className="mb-2">
+              <input
+                type="file"
+                className="form-control"
+                accept="image/*"
+                style={{ maxWidth: 300 }}
+                onChange={handleFileChange}
+                tabIndex={-1}
+              />
+            </div>
+            <div className="input-group">
               <input
                 type="text"
                 className={`form-control ${styles.dashboardInput}`}
-                name="name"
-                value={formData.name}
+                name="image"
+                value={formData.image}
                 onChange={handleChange}
                 required
+                placeholder="URL o ruta local de la imagen"
               />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Precio</label>
-              <input
-                type="number"
-                className={`form-control ${styles.dashboardInput}`}
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                required
-                min="0"
-                step="0.01"
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Stock</label>
-              <input
-                type="number"
-                className={`form-control ${styles.dashboardInput}`}
-                name="stock"
-                value={formData.stock}
-                onChange={handleChange}
-                required
-                min="0"
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Categoría</label>
-              <select
-                className={`form-select ${styles.dashboardSelect}`}
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Seleccionar categoría...</option>
-                {categories.map(cat => (
-                  <option key={cat._id} value={cat._id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="col-12">
-              <label className="form-label">Descripción</label>
-              <textarea
-                className={`form-control ${styles.dashboardInput}`}
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows="3"
-                required
-              />
-            </div>
-            <div className="col-12">
-              <label className="form-label">Imagen</label>
-              <div className="mb-2">
-                <input
-                  type="file"
-                  className="form-control"
-                  accept="image/*"
-                  style={{ maxWidth: 300 }}
-                  onChange={handleFileChange}
-                  tabIndex={-1}
-                />
-              </div>
-              <div className="input-group">
-                <input
-                  type="text"
-                  className={`form-control ${styles.dashboardInput}`}
-                  name="image"
-                  value={formData.image}
-                  onChange={handleChange}
-                  required
-                  placeholder="URL o ruta local de la imagen"
-                />
-              </div>
-            </div>
-            <div className="col-12">
-              <div className="form-check">
-                <input
-                  type="checkbox"
-                  className="form-check-input"
-                  name="isAvailable"
-                  checked={formData.isAvailable}
-                  onChange={handleChange}
-                  id="isAvailable"
-                />
-                <label className="form-check-label" htmlFor="isAvailable">
-                  Producto disponible
-                </label>
-              </div>
             </div>
           </div>
-          <div className="mt-4 d-flex justify-content-end gap-2">
-            <button
-              type="button"
-              className={`btn btn-secondary ${styles.dashboardBtn} ${styles.dashboardBtnOutline}`}
-              onClick={onHide}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className={`btn btn-primary ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}
-              disabled={loading}
-            >
-              {loading ? 'Guardando...' : product ? 'Guardar cambios' : 'Crear producto'}
-            </button>
+          <div className="col-12">
+            <div className="form-check">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                name="isAvailable"
+                checked={formData.isAvailable}
+                onChange={handleChange}
+                id="isAvailable"
+              />
+              <label className="form-check-label" htmlFor="isAvailable">
+                Producto disponible
+              </label>
+            </div>
           </div>
-        </form>
-      </Modal.Body>
-    </Modal>
+        </div>
+        <div className="mt-4 d-flex justify-content-end gap-2">
+          <button
+            type="button"
+            className={`btn btn-secondary ${styles.dashboardBtn} ${styles.dashboardBtnOutline}`}
+            onClick={handleClose}
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className={`btn btn-primary ${styles.dashboardBtn} ${styles.dashboardBtnPrimary}`}
+            disabled={loading}
+          >
+            {loading ? 'Guardando...' : product ? 'Guardar cambios' : 'Crear producto'}
+          </button>
+        </div>
+      </form>
+    </CustomModal>
   );
 };
 

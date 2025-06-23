@@ -10,11 +10,11 @@ $mobile-breakpoint: 767px;
   position: fixed;
   bottom: 20px;
   left: 20px;
-  z-index: 1040; // Un poco menos que el carrito
+  z-index: 1040;
   
   @media (min-width: 768px) {
-    bottom: 40px;
-    left: 40px;
+    bottom: 25px;
+    left: 25px;
   }
 }
 

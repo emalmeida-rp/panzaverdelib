@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -9,28 +9,39 @@ import Login from './pages/admin/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import ItemListContainer from './components/ItemListContainer';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import ProductForm from './pages/admin/ProductForm';
 import CartWidget from './components/CartWidget';
 import { CartProvider } from './context/CartContext';
 import { AlertProvider } from './context/AlertContext';
 import AlertToast from './components/AlertToast';
 import OrderForm from './pages/OrderForm';
 import OrderConfirmation from './pages/OrderConfirmation';
-import ProductDetailPlaceholder from './pages/admin/ProductDetailPlaceholder';
-import OrderDetailPlaceholder from './pages/admin/OrderDetailPlaceholder';
 import SocialWidget from './components/SocialWidget';
 import './App.css';
+
+const Layout = ({ children }) => {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/belpvsrvadm-ey') || location.pathname.startsWith('/admin');
+
+  return (
+    <div className="App">
+      {!isAdminRoute && <Navbar />}
+      <AlertToast />
+      {!isAdminRoute && <SocialWidget />}
+      <main className="main-content">
+        {children}
+      </main>
+      {!isAdminRoute && <CartWidget />}
+      {!isAdminRoute && <Footer />}
+    </div>
+  );
+};
 
 function App() {
   return (
     <AlertProvider>
       <CartProvider>
         <Router>
-          <div className="App">
-            <Navbar />
-            <AlertToast />
-            <SocialWidget />
-            <main className="main-content">
+          <Layout>
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/productos" element={<ItemListContainer />} />
@@ -46,45 +57,10 @@ function App() {
                     </ProtectedRoute>
                   } 
                 />
-                <Route 
-                  path="/admin/products/new" 
-                  element={
-                    <ProtectedRoute>
-                      <ProductForm />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/admin/products/edit/:id" 
-                  element={
-                    <ProtectedRoute>
-                      <ProductForm />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/admin/products/:id" 
-                  element={
-                    <ProtectedRoute>
-                      <ProductDetailPlaceholder />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/admin/orders/:code" 
-                  element={
-                    <ProtectedRoute>
-                      <OrderDetailPlaceholder />
-                    </ProtectedRoute>
-                  } 
-                />
                 <Route path="/order-form" element={<OrderForm />} />
                 <Route path="/order-confirmation/:code" element={<OrderConfirmation />} />
               </Routes>
-            </main>
-            <CartWidget />
-            <Footer />
-          </div>
+          </Layout>
         </Router>
       </CartProvider>
     </AlertProvider>

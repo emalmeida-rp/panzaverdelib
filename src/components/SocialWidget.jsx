@@ -50,7 +50,7 @@ const SocialWidget = () => {
   };
 
   return (
-    <div className={styles.socialWidgetFloat} ref={widgetRef}>
+    <div className={styles.socialWidgetFloat}>
       <div className={`${styles.dropdownMenu} ${isOpen ? styles.show : ''}`}>
         <a href="https://wa.me/message/OICVOUY5BK7OL1" target="_blank" rel="noopener noreferrer" className={`${styles.menuButton} ${styles.whatsapp}`} aria-label="WhatsApp">
           <i className="bi bi-whatsapp"></i>

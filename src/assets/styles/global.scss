@@ -2,6 +2,7 @@
 @use './pages/history';
 @use './pages/contact';
 @use './pages/cart';
+// NOTA: Efectos de campaña ahora están en index.css para evitar problemas SCSS
 
 // Variables
 $primary-color: #28a745;
@@ -42,7 +43,7 @@ body {
 
 main {
   flex: 1;
-  padding: 2rem 0;
+  padding: 0;
 }
 
 // Estilos del Navbar
@@ -601,4 +602,205 @@ main {
     min-width: 0 !important;
     overflow-x: auto !important;
   }
+}
+
+/* Corrección completa de modales considerando sidebar en cada breakpoint */
+.modal {
+  // Dejar que Bootstrap maneje z-index naturalmente
+  padding: 0 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  // Crear contexto de stacking aislado
+  isolation: isolate;
+}
+
+.modal-backdrop {
+  // Bootstrap maneja esto correctamente
+}
+
+/* Mobile: sin sidebar, modal usa 90% del ancho disponible */
+@media (max-width: 767px) {
+  .modal-dialog {
+    margin: 1rem auto !important;
+    width: 90% !important;
+    max-width: 90% !important;
+    max-height: calc(100vh - 2rem) !important;
+  }
+  
+  .modal-content {
+    width: 100% !important;
+    max-height: calc(100vh - 2rem) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border-radius: 8px !important;
+  }
+  
+  .modal-header {
+    flex-shrink: 0 !important;
+    padding: 0.75rem 1rem !important;
+    border-bottom: 1px solid #dee2e6 !important;
+  }
+  
+  .modal-body {
+    flex-grow: 1 !important;
+    overflow-y: auto !important;
+    padding: 1rem !important;
+    max-height: calc(100vh - 8rem) !important;
+  }
+  
+  .modal-footer {
+    flex-shrink: 0 !important;
+    padding: 0.75rem 1rem !important;
+    border-top: 1px solid #dee2e6 !important;
+  }
+}
+
+/* Tablet: con sidebar de 250px, modal usa 80% del espacio disponible */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .modal {
+    padding-left: 250px !important;
+    transition: padding-left 0.3s ease !important;
+  }
+  
+  .modal-dialog {
+    margin: 1.5rem auto !important;
+    width: 80% !important;
+    max-width: 80% !important;
+    max-height: calc(100vh - 3rem) !important;
+    transition: all 0.3s ease !important;
+  }
+  
+  .modal-content {
+    width: 100% !important;
+    max-height: calc(100vh - 3rem) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border-radius: 12px !important;
+  }
+  
+  .modal-header {
+    flex-shrink: 0 !important;
+    padding: 1rem 1.5rem !important;
+    border-bottom: 1px solid #dee2e6 !important;
+  }
+  
+  .modal-body {
+    flex-grow: 1 !important;
+    overflow-y: auto !important;
+    padding: 1.5rem !important;
+    max-height: calc(100vh - 10rem) !important;
+  }
+  
+  .modal-footer {
+    flex-shrink: 0 !important;
+    padding: 1rem 1.5rem !important;
+    border-top: 1px solid #dee2e6 !important;
+  }
+}
+
+/* Desktop: modal usa 80% del ancho disponible, centrado */
+@media (min-width: 1200px) {
+  .modal {
+    padding-left: 250px !important;
+    transition: padding-left 0.3s ease !important;
+  }
+  
+  .modal-dialog {
+    margin: 2rem auto !important;
+    width: 80% !important;
+    max-width: 900px !important;
+    max-height: calc(100vh - 4rem) !important;
+    transition: all 0.3s ease !important;
+  }
+  
+  .modal-content {
+    width: 100% !important;
+    max-height: calc(100vh - 4rem) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border-radius: 12px !important;
+  }
+  
+  .modal-header {
+    flex-shrink: 0 !important;
+    padding: 1rem 1.5rem !important;
+    border-bottom: 1px solid #dee2e6 !important;
+  }
+  
+  .modal-body {
+    flex-grow: 1 !important;
+    overflow-y: auto !important;
+    padding: 1.5rem !important;
+    max-height: calc(100vh - 12rem) !important;
+  }
+  
+  .modal-footer {
+    flex-shrink: 0 !important;
+    padding: 1rem 1.5rem !important;
+    border-top: 1px solid #dee2e6 !important;
+  }
+}
+
+/* Estilos específicos para sidebar colapsado */
+.dashboardLayout.sidebarCollapsed {
+  @media (min-width: 768px) {
+    .modal {
+      padding-left: 70px !important;
+    }
+  }
+}
+
+/* Alternativo: usando clases body para detectar estado colapsado */
+body.sidebar-collapsed {
+  @media (min-width: 768px) {
+    .modal {
+      padding-left: 70px !important;
+    }
+  }
+}
+
+/* ===== SWAL2 CUSTOM CLASSES ===== */
+.swal2-container-custom {
+  z-index: 10000 !important;
+}
+
+.swal2-popup-custom {
+  z-index: 10001 !important;
+}
+
+/* ===== LIMPIEZA FORZADA DE MODALES ===== */
+/* Asegurar que los modales Bootstrap nunca se queden pegados */
+.modal[style*="display: none"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.modal-backdrop.fade:not(.show) {
+  display: none !important;
+}
+
+/* Forzar limpieza del body cuando no hay modales activos */
+body:not(.modal-open) {
+  overflow: auto !important;
+  padding-right: 0 !important;
+}
+
+/* Limpiar atributos residuales de Bootstrap */
+body[data-bs-overflow="hidden"] {
+  overflow: auto !important;
+}
+
+body[data-bs-padding-right] {
+  padding-right: 0 !important;
 } 

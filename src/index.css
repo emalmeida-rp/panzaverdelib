@@ -1,11 +1,15 @@
+html {
+  overflow-y: scroll;
+}
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: var(--text-color);
+  background-color: var(--background-color);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -136,4 +140,101 @@ main {
 .footer-container {
   max-width: 1200px;
   margin: 0 auto;
+}
+
+/* KEYFRAMES PARA EFECTOS DE CAMPAÑA */
+@keyframes pulse {
+  0% { 
+    transform: scale(1); 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  50% { 
+    transform: scale(1.02); 
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  }
+  100% { 
+    transform: scale(1); 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+  50% { box-shadow: 0 0 25px var(--campaign-color, #e67e22); }
+}
+
+/* EFECTOS FORZADOS PARA CAMPAÑAS */
+.campaign-card {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.campaign-card.effect-pulse {
+  animation: pulse 2s infinite ease-in-out !important;
+  transform: scale(1.01) !important;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.campaign-card.effect-glow {
+  animation: glow 3s infinite ease-in-out !important;
+  border: 2px solid var(--campaign-color, #e67e22) !important;
+}
+
+.campaign-card.effect-firework {
+  position: relative !important;
+  animation: fireworkPulse 3s infinite ease-in-out !important;
+}
+
+.campaign-card.effect-firework::after {
+  content: '✨' !important;
+  position: absolute !important;
+  top: 10px !important;
+  left: 10px !important;
+  font-size: 1.5rem !important;
+  animation: fireworkSpin 2s infinite linear !important;
+  pointer-events: none !important;
+  z-index: 5 !important;
+}
+
+.campaign-card.effect-bounce:hover {
+  transform: translateY(-10px) scale(1.02) !important;
+  transition: all 0.3s ease !important;
+}
+
+.campaign-card.effect-shine::before {
+  content: '' !important;
+  position: absolute !important;
+  top: -50% !important;
+  left: -50% !important;
+  width: 200% !important;
+  height: 200% !important;
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%) !important;
+  transform: rotate(45deg) !important;
+  animation: shine 3s infinite !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+@keyframes fireworkPulse {
+  0%, 100% { 
+    transform: scale(1); 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  50% { 
+    transform: scale(1.03); 
+    box-shadow: 0 12px 35px rgba(255,215,0,0.4);
+  }
+}
+
+@keyframes fireworkSpin {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(90deg) scale(1.2); }
+  50% { transform: rotate(180deg) scale(0.8); }
+  75% { transform: rotate(270deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
 }

@@ -32,4 +32,28 @@
 .activeCategory {
   background: #388e3c !important;
   color: #fff !important;
+}
+
+.navbarLogo {
+  color: white;
+  text-decoration: none;
+  font-size: 1.5rem;
+  font-weight: 500;
+  white-space: nowrap;
+
+  .shortBrandName {
+    display: none;
+  }
+
+  @media (max-width: 767.98px) {
+    font-size: 1.25rem;
+
+    .fullBrandName {
+      display: none;
+    }
+
+    .shortBrandName {
+      display: inline;
+    }
+  }
 } 
